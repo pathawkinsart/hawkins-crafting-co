@@ -225,6 +225,16 @@
         font: inherit; font-weight: 700; font-size: 16px; cursor: pointer;
       }
       .lib-empty { color: var(--ink-soft); margin-top: 14px; }
+      .toast {
+        position: fixed; left: 50%; transform: translateX(-50%);
+        bottom: calc(16px + env(safe-area-inset-bottom));
+        width: max-content; max-width: min(92vw, 520px);
+        background: #2e2a16; color: var(--ink);
+        border: 2px solid var(--ember); border-radius: 12px;
+        padding: 12px 16px; font-size: 15.5px; font-weight: 600;
+        text-align: center; z-index: 60;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
 
       footer { margin-top: 40px; color: var(--ink-mute); font-size: 14px; text-align: center; }
       .safari-tip { margin-top: 8px; color: var(--ink-soft); }
@@ -243,7 +253,7 @@
       <header>
         <div class="brand">
           <div class="badge">
-            <img src="assets/forge-badge.webp" alt="Forge, the Hawkins Crafting Co. ember mascot" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'fallback',textContent:'\u{1F525}'}))" />
+            <img src="data:image/webp;base64,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" alt="Forge, the Hawkins Crafting Co. ember mascot" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'fallback',textContent:'\u{1F525}'}))" />
           </div>
           <div>
             <p class="eyebrow">Hawkins Crafting Co.</p>
@@ -280,6 +290,8 @@
         <div class="safari-tip">In Safari: tap Share → <strong>Add to Home Screen</strong> to keep the library one tap away while you chat.</div>
       </footer>
     </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
     <script>
       "use strict";
@@ -484,7 +496,7 @@
           actions.className = "rowactions";
           var dl = document.createElement("a");
           dl.className = "dlbtn";
-          dl.setAttribute("href", e.mp3);
+          dl.setAttribute("href", "#");
           dl.setAttribute("download", "");
           dl.setAttribute("data-dl", e.slug);
           dl.setAttribute("data-ext", "mp3");
@@ -492,7 +504,7 @@
           dl.innerHTML = DL_SVG + "<span>MP3</span>";
           var wav = document.createElement("a");
           wav.className = "wavlink";
-          wav.setAttribute("href", e.wav);
+          wav.setAttribute("href", "#");
           wav.setAttribute("download", "");
           wav.setAttribute("data-dl", e.slug);
           wav.setAttribute("data-ext", "wav");
@@ -545,9 +557,10 @@
         }
       }
 
-      /* Downloads: fetch the file ourselves (SFXMint sends CORS *), hand the
-         browser a same-page blob so tapping saves the file instead of
-         navigating to a media-player page. Filename = the display name. */
+      /* Downloads: fetch the file ourselves (SFXMint sends CORS *) and save
+         it from this page — the raw file URL is never opened, so a tap can
+         never land on a media-player screen with no way back. Filename =
+         the display name. */
       function dlFileName(entry, ext) {
         var name = (displayName(entry) || entry.slug || "sound")
           .replace(/[\\\/:*?"<>|#%&{}$!'@+=`~]/g, " ")
@@ -559,9 +572,20 @@
         return name + "." + ext;
       }
 
+      var toastEl = document.getElementById("toast");
+      var toastTimer = null;
+      function showToast(msg) {
+        if (!toastEl) return;
+        toastEl.textContent = msg;
+        toastEl.hidden = false;
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toastEl.hidden = true; }, 4500);
+      }
+
       function downloadSound(el, entry, ext) {
         if (el.getAttribute("data-busy") === "1") return;
         var url = ext === "wav" ? entry.wav : entry.mp3;
+        var fileName = dlFileName(entry, ext);
         var labelEl = el.querySelector("span") || el;
         var origLabel = labelEl.textContent;
         el.setAttribute("data-busy", "1");
@@ -579,31 +603,55 @@
             labelEl.textContent = origLabel;
           }
         }
-        fetch(url).then(function (res) {
-          if (!res.ok) throw new Error("download failed");
-          return res.blob();
-        }).then(function (blob) {
+        function fail(msg) {
+          finish(false);
+          showToast(msg);
+        }
+        function anchorSave(blob) {
           var objUrl = URL.createObjectURL(blob);
           var a = document.createElement("a");
           a.href = objUrl;
-          a.setAttribute("download", dlFileName(entry, ext));
+          a.setAttribute("download", fileName);
           document.body.appendChild(a);
           a.click();
           a.remove();
           setTimeout(function () { URL.revokeObjectURL(objUrl); }, 4000);
           finish(true);
+        }
+        fetch(url).then(function (res) {
+          if (!res.ok) throw new Error("download failed");
+          return res.blob();
+        }).then(function (blob) {
+          /* iOS and in-app web views ignore the download attribute and open
+             audio in a full-screen player instead of saving it. On iOS the
+             in-page save path is the share sheet ("Save to Files"), so use
+             it there; everywhere else the blob anchor saves the file
+             directly. Either way the raw file URL is never opened — if a
+             save can't happen, the reader gets a message on this page. */
+          var isIOS = /iP(ad|hone|od)/.test(navigator.userAgent) ||
+            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+          if (!isIOS) { anchorSave(blob); return; }
+          var file = null;
+          try {
+            file = new File([blob], fileName, { type: blob.type || (ext === "wav" ? "audio/wav" : "audio/mpeg") });
+          } catch (e) { file = null; }
+          var canShareFile = false;
+          try {
+            canShareFile = !!(file && navigator.share && navigator.canShare &&
+              navigator.canShare({ files: [file] }));
+          } catch (e) { canShareFile = false; }
+          if (canShareFile) {
+            navigator.share({ files: [file] }).then(function () {
+              finish(true);
+            }, function (err) {
+              if (err && err.name === "AbortError") { finish(false); return; }
+              fail("Couldn\u2019t save \u201C" + fileName + "\u201D. Tap the button and try again.");
+            });
+          } else {
+            fail("This view can\u2019t save files. Open the library in Safari, then tap MP3 or WAV to save the sound.");
+          }
         }).catch(function () {
-          finish(false);
-          /* Safari blocks window.open() once the tap's async fetch has
-             resolved, so fall back to a programmatic anchor click, which
-             Safari treats as part of the original tap. */
-          var a = document.createElement("a");
-          a.href = url;
-          a.target = "_blank";
-          a.rel = "noopener";
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
+          fail("Couldn\u2019t save \u201C" + fileName + "\u201D \u2014 check your connection and tap again.");
         });
       }
 
