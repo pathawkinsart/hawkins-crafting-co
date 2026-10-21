@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>How the Forge iPhone App Builder Works · Hawkins Crafting Co.</title>
+<meta name="description" content="The story behind the Forge iPhone App Builder: why iPhone apps need a Mac, how one button on a phone replaces the whole ritual, and what's real vs. demo." />
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Jost:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f6efe2; --surface:#fffaf0; --ink:#33261a; --ink-soft:#6d5b47;
+    --ember:#e8590c; --ember-deep:#c2430a; --line:#e4d5bd;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Jost",system-ui,sans-serif;line-height:1.6}
+  a{color:var(--ember-deep)}
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px}
+  header.site{border-bottom:1px solid var(--line);background:var(--surface)}
+  header.site .wrap{max-width:880px;display:flex;align-items:center;justify-content:space-between;padding-top:14px;padding-bottom:14px}
+  .brand{font-family:"Marcellus",serif;font-size:20px;text-decoration:none;color:var(--ink)}
+  .brand span{color:var(--ember)}
+  .backlink{font-size:15px;text-decoration:none;font-weight:500}
+  main{padding:40px 0 6px}
+  h1{font-family:"Marcellus",serif;font-weight:400;font-size:clamp(29px,5vw,40px);margin:0 0 6px}
+  h2{font-family:"Marcellus",serif;font-weight:400;font-size:26px;margin:38px 0 8px}
+  p{margin:0 0 14px;font-size:17px}
+  .lede{font-size:19px;color:var(--ink-soft)}
+  ol.steps{list-style:none;counter-reset:step;padding:0;margin:18px 0 6px}
+  ol.steps li{counter-increment:step;background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:16px 18px 16px 64px;margin-bottom:12px;position:relative;font-size:17px}
+  ol.steps li::before{content:counter(step);position:absolute;left:16px;top:50%;transform:translateY(-50%);
+    width:34px;height:34px;border-radius:50%;background:var(--ember);color:#fff;font-weight:600;
+    display:flex;align-items:center;justify-content:center;font-size:17px}
+  ol.steps b{display:block;font-size:17.5px}
+  ol.steps span{color:var(--ink-soft)}
+  .honest{background:#fdeedd;border:1px solid #f2cf9f;border-radius:16px;padding:18px 20px;margin:22px 0}
+  .honest p{margin:0 0 8px}
+  .honest p:last-child{margin:0}
+  .cta-row{display:flex;gap:14px;flex-wrap:wrap;margin:32px 0 10px}
+  .btn{display:inline-block;text-decoration:none;font-weight:600;font-size:17px;padding:14px 28px;border-radius:999px}
+  .btn-primary{background:var(--ember);color:#fff;box-shadow:0 6px 18px rgba(232,89,12,.35)}
+  .btn-primary:hover{background:var(--ember-deep)}
+  .btn-ghost{border:2px solid var(--line);color:var(--ink);background:var(--surface)}
+  footer.site{margin-top:44px;border-top:1px solid var(--line);background:var(--surface)}
+  footer.site .wrap{max-width:880px;padding-top:20px;padding-bottom:26px;text-align:center;color:var(--ink-soft);font-size:15px}
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/">Hawkins Crafting Co. <span>◆</span></a>
+    <a class="backlink" href="./">← Back to the demo</a>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <h1>How the Builder works</h1>
+    <p class="lede">The short version: it's a factory with one button. Here's the longer one.</p>
+
+    <h2>The problem nobody warns you about</h2>
+    <p>Every iPhone app in the world has to be <em>built</em> — compiled, packaged, and signed — by a program
+    called Xcode. And Xcode only runs on a Mac. So if you make apps the way we do — dreaming them up and
+    building them with an AI partner, no code written by hand — you still hit a wall shaped like a computer
+    you don't own.</p>
+    <p>The usual answers are renting time on someone else's Mac by the minute, or standing in a queue of
+    free build minutes that runs out at the worst moment. We wanted a third answer: <strong>own the factory</strong>.</p>
+
+    <h2>The idea</h2>
+    <p>The Forge iPhone App Builder is an app whose whole job is building other apps. Your projects live on
+    it as simple cards. Behind the button sits a "middleman" — a small, private server side that holds your
+    build key safely and talks to a cloud Mac on your behalf. You never see the machinery. You see a button,
+    five friendly steps, and a checkmark.</p>
+
+    <h2>What happens when you tap Build</h2>
+    <ol class="steps">
+      <li><b>Waking up the workshop</b><span>The Builder calls its middleman, which securely fetches your build key — stored on the server only, never in the page.</span></li>
+      <li><b>Handing over the plans</b><span>Your app's project is sent to a cloud Mac provided by Codemagic, a build service — the Mac does the heavy lifting, invisibly.</span></li>
+      <li><b>Building the app</b><span>The Mac compiles your app with Apple's official tools and the iPhone SDK, exactly as a Mac on a desk would.</span></li>
+      <li><b>Signing the work</b><span>The finished app is signed with your own Apple developer certificate — your name, your account, your app.</span></li>
+      <li><b>Delivery to TestFlight</b><span>The signed app uploads straight to Apple's TestFlight, ready to install on your testers' phones. About three minutes, tap to done.</span></li>
+    </ol>
+
+    <div class="honest">
+      <p><strong>What's real, and what's demo?</strong></p>
+      <p>The demo on this site is a simulation — it shows the experience without touching any real accounts.
+      The Builder itself is completely real: it's how our own game, <em>Steamy Dumplings</em>, gets built and
+      shipped to TestFlight. Its first build, fired from a phone tap, landed in TestFlight on October 20, 2026.</p>
+    </div>
+
+    <h2>Who it's for</h2>
+    <p>Builders like us: people with more ideas than coding hours — indie makers, no-code creators, anyone
+    whose workshop is an AI partner and a phone. If you've ever thought <em>"I could make that app, if only
+    I had a Mac,"</em> this factory door is the one we built for ourselves first.</p>
+
+    <h2>What's next</h2>
+    <p>Right now the Builder is a private tool in our own workshop. A version other builders can run for
+    themselves — with their own accounts and their own keys — is on the workbench here at Hawkins Crafting Co.
+    Watch this space, or follow along on <a href="https://www.youtube.com/@patandforge">YouTube</a>,
+    where we build in the open.</p>
+
+    <div class="cta-row">
+      <a class="btn btn-primary" href="./">Try the demo →</a>
+      <a class="btn btn-ghost" href="/">Back to the workshop</a>
+    </div>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <p>by Hawkins Crafting Co. · made by Forge 🔥 · <a href="https://www.youtube.com/@patandforge">Pat &amp; Forge on YouTube</a></p>
+  </div>
+</footer>
+</body>
+</html>

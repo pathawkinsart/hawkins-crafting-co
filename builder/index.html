@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Forge iPhone App Builder — Demo · Hawkins Crafting Co.</title>
+<meta name="description" content="Try the demo of the Forge iPhone App Builder: one button that builds a real iPhone app and sends it to TestFlight — no Mac on your desk, no command line, no queue." />
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Jost:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f6efe2; --surface:#fffaf0; --ink:#33261a; --ink-soft:#6d5b47;
+    --ember:#e8590c; --ember-deep:#c2430a; --line:#e4d5bd;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Jost",system-ui,sans-serif;line-height:1.55}
+  a{color:var(--ember-deep)}
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px}
+  header.site{border-bottom:1px solid var(--line);background:var(--surface)}
+  header.site .wrap{display:flex;align-items:center;justify-content:space-between;padding-top:14px;padding-bottom:14px}
+  .brand{font-family:"Marcellus",serif;font-size:20px;text-decoration:none;color:var(--ink)}
+  .brand span{color:var(--ember)}
+  .backlink{font-size:15px;text-decoration:none;font-weight:500}
+  main{padding:42px 0 10px;text-align:center}
+  h1{font-family:"Marcellus",serif;font-weight:400;font-size:clamp(30px,5.4vw,44px);margin:0 0 8px}
+  .tagline{font-size:clamp(17px,2.6vw,20px);color:var(--ink-soft);margin:0 auto 6px;max-width:560px}
+  .demo-note{display:inline-block;margin:14px 0 22px;background:#fdeedd;border:1px solid #f2cf9f;color:#8a4b12;
+    padding:8px 16px;border-radius:999px;font-size:15px;font-weight:500}
+  .phone{margin:0 auto;max-width:402px;background:#171310;border-radius:44px;padding:12px;
+    box-shadow:0 24px 60px rgba(51,38,26,.35),0 4px 14px rgba(51,38,26,.25)}
+  .phone iframe{display:block;width:100%;height:740px;border:0;border-radius:34px;background:#14100d}
+  .fullscreen{display:inline-block;margin-top:14px;font-size:15px;font-weight:500}
+  .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:34px 0 8px}
+  .btn{display:inline-block;text-decoration:none;font-weight:600;font-size:17px;padding:14px 28px;border-radius:999px}
+  .btn-primary{background:var(--ember);color:#fff;box-shadow:0 6px 18px rgba(232,89,12,.35)}
+  .btn-primary:hover{background:var(--ember-deep)}
+  .btn-ghost{border:2px solid var(--line);color:var(--ink);background:var(--surface)}
+  .real-note{max-width:600px;margin:26px auto 0;color:var(--ink-soft);font-size:16px}
+  footer.site{margin-top:48px;border-top:1px solid var(--line);background:var(--surface)}
+  footer.site .wrap{padding-top:20px;padding-bottom:26px;text-align:center;color:var(--ink-soft);font-size:15px}
+  @media (max-width:480px){ .phone iframe{height:72vh} }
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="/">Hawkins Crafting Co. <span>◆</span></a>
+    <a class="backlink" href="/">← All projects</a>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <h1>The Forge iPhone App Builder</h1>
+    <p class="tagline">One button builds a real iPhone app and sends it to TestFlight.<br/>No Mac on your desk. No command line. No queue.</p>
+    <div><span class="demo-note">This is a hands-on demo — the build below is a simulation. The real Builder in our workshop ships actual apps.</span></div>
+
+    <div class="phone">
+      <iframe src="demo.html" title="Forge iPhone App Builder — interactive demo" loading="lazy"></iframe>
+    </div>
+    <a class="fullscreen" href="demo.html">Open the demo full-screen →</a>
+
+    <div class="cta-row">
+      <a class="btn btn-primary" href="how-it-works.html">How does this work? →</a>
+      <a class="btn btn-ghost" href="/">Back to the workshop</a>
+    </div>
+
+    <p class="real-note">Built and used daily at Hawkins Crafting Co. — it's how our own app, Steamy Dumplings,
+    gets built and shipped. A version other builders can run for themselves is on the workbench.</p>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <p>by Hawkins Crafting Co. · made by Forge 🔥 · <a href="https://www.youtube.com/@patandforge">Pat &amp; Forge on YouTube</a></p>
+  </div>
+</footer>
+</body>
+</html>
