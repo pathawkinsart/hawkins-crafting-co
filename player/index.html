@@ -964,9 +964,18 @@ img[src*="i.ytimg.com"][src*="maxresdefault"] { object-view-box: inset(0 21.875%
   </header>
 
   <!-- Browser version: no native bridge. Pick songs here; they save in IndexedDB on this device only. -->
-  <div id="browserBar"><b>Browser version — pick songs to start.</b> Songs you pick save in this browser only, not on other devices. <span id="browserSavedNote">No songs saved in this browser yet.</span><br>
+  <div id="browserBar"><b>Browser version — pick your main Music folder once.</b> Songs you pick save in this browser only, not on other devices. <span id="browserSavedNote">No songs saved in this browser yet.</span><br>
+  <button type="button" onclick="pickMainFolder()">Pick main Music folder</button>
   <button type="button" onclick="pickSongs()">Pick songs (.mp3 / .m4a)</button>
   <button type="button" onclick="pickFolder()">Pick a folder</button>
+  <button type="button" onclick="pickZip()">Or upload your main Music folder as ONE .zip (iPhone)</button><br>
+  <span id="mainFolderStatus"></span><br>
+  <span>Pick your main Music folder ONCE — every album folder inside is scanned automatically. You do NOT need to pick each album folder.</span><br>
+  <pre style="white-space:pre-wrap;font-size:14px;background:#222;padding:10px;border:1px solid #555;">Music/
+  Album1/ song.mp3, cover.jpg, record.jpg
+  Album2/ song.mp3, cover.jpg, record.jpg
+Music/Artist/Album/ song.mp3, cover.jpg, record.jpg</pre>
+  <span>On iPhone, folder picking is unreliable, so upload ONE .zip of your main Music folder instead — it is unpacked in this browser, no files leave this device.</span>
   <a href="https://music.youtube.com" target="_blank" rel="noopener">Open YouTube Music in a new tab</a><br>
   <span>Download from YouTube: <b>NOT WIRED YET</b> — the download port is a separate project. This page never pretends a download worked.</span></div>
   <!-- The Crate -->
@@ -1408,7 +1417,8 @@ img[src*="i.ytimg.com"][src*="maxresdefault"] { object-view-box: inset(0 21.875%
 
 
 <input type="file" id="pickInput" accept=".mp3,.m4a,audio/mpeg,audio/mp4" multiple hidden>
-<input type="file" id="folderInput" accept=".mp3,.m4a,audio/mpeg,audio/mp4" multiple webkitdirectory hidden>
+<input type="file" id="folderInput" accept=".mp3,.m4a,.jpg,.jpeg,.png,.webp,audio/mpeg,audio/mp4,image/jpeg,image/png,image/webp" multiple webkitdirectory hidden>
+<input type="file" id="zipInput" accept=".zip,application/zip" hidden>
 <script>
 window.FORGE_LOGO = document.getElementById("npArt") ? document.getElementById("npArt").getAttribute("src") : "";
 // Discover play/more buttons: honest, not wired
@@ -1468,6 +1478,27 @@ function saveFavs(){ try{ localStorage.setItem("forgeFavs",JSON.stringify(favs))
 function savePlaylists(){ try{ localStorage.setItem("music-playlists",JSON.stringify(playlists)); }catch(e){} }
 function saveEdits(){ try{ localStorage.setItem("music-edits",JSON.stringify(edits)); }catch(e){} }
 var imgUrls={}, savedStatsCache={n:0,bytes:0};
+/* Main Music folder: strip the picked root folder name from every path.
+   Folder picks give "Music/Album/song.mp3" (webkitRelativePath) or
+   "/Music/Album/song.mp3" (showDirectoryPicker _relPath). Without this,
+   parseMeta would read artist="Music". Stripping the first segment gives
+   "Album/song.mp3" -> album=Album, and "Artist/Album/song.mp3" ->
+   artist=Artist, album=Album. Single songs (no "/") are unchanged. */
+function stripRootRel(raw){
+  var rel=String(raw||"").replace(/^\/+/, "");
+  var i=rel.indexOf("/");
+  return i>=0 ? rel.slice(i+1) : rel;
+}
+function stripCommonRoot(paths){
+  var segs=paths.map(function(p){ return String(p||"").replace(/^\/+/, "").split("/").filter(Boolean); }).filter(function(s){ return s.length>1; });
+  if(!segs.length) return paths.slice();
+  var first=segs[0][0], shared=segs.every(function(s){ return s[0]===first; });
+  if(!shared) return paths.slice();
+  return paths.map(function(p){
+    var clean=String(p||"").replace(/^\/+/, ""), parts=clean.split("/");
+    return parts[0]===first ? parts.slice(1).join("/") : clean;
+  });
+}
 function parseMeta(file, rel){
   var path=rel||file.name, parts=path.split("/").filter(Boolean), base=parts[parts.length-1]||file.name;
   var title=base.replace(/\.(mp3|m4a)$/i,""), artist="", album="", dir="";
@@ -1477,7 +1508,7 @@ function parseMeta(file, rel){
   if(m && !artist){ artist=m[1]; title=m[2]; }
   return {title:title,artist:artist,album:album,dir:dir};
 }
-function makeId(file){ return file.name+"|"+file.size+"|"+(file.lastModified||0); }
+function makeId(file, rel){ return (rel||file.name)+"|"+file.size+"|"+(file.lastModified||0); }
 function rebuildAlbums(){
   var map={}, order=[];
   tracks.forEach(function(t){
@@ -1529,30 +1560,40 @@ function applyTrackEdits(t){
 }
 
 /* ---------- Pick / save / load ---------- */
-function addFiles(files){
-  var audios=[], images=[];
+function addFiles(files, opts){
+  opts=opts||{};
+  var audios=[], images=[], skipped=0;
   for(var i=0;i<files.length;i++){
     var f=files[i], low=f.name.toLowerCase();
+    var rawRel=f.webkitRelativePath||f._relPath||f.name;
+    var rel=opts.alreadyStripped ? String(rawRel||"").replace(/^\/+/, "") : (opts.stripRoot ? stripRootRel(rawRel) : String(rawRel||"").replace(/^\/+/, ""));
+    f._strippedRel=rel;
     if(/\.(mp3|m4a)$/.test(low)) audios.push(f);
     else if(/\.(jpg|jpeg|png|webp)$/.test(low)) images.push(f);
+    else skipped++;
   }
   if(!audios.length && !images.length){ toast("Pick .mp3 / .m4a songs, or cover.jpg / record.jpg art.",5000); return; }
   var jobs=[];
   images.forEach(function(img){
-    var rel=(img.webkitRelativePath||img._relPath||img.name).toLowerCase();
+    var rel=(img._strippedRel||img.webkitRelativePath||img._relPath||img.name).toLowerCase();
     jobs.push(openDB().then(function(){ return dbTx("images","readwrite",function(st){ st.put({id:rel,blob:img}); }); }).catch(function(){}));
   });
   Promise.all(jobs).then(function(){
     var puts=audios.map(function(file){
-      var rel=file.webkitRelativePath||file._relPath||file.name, meta=parseMeta(file,rel);
-      var rec={id:makeId(file),title:meta.title,artist:meta.artist,album:meta.album,dir:meta.dir,size:file.size,addedAt:Date.now(),saved:true};
+      var rel=file._strippedRel||file.webkitRelativePath||file._relPath||file.name, meta=parseMeta(file,rel);
+      var rec={id:makeId(file,rel),title:meta.title,artist:meta.artist,album:meta.album,dir:meta.dir,size:file.size,addedAt:Date.now(),saved:true};
       return openDB().then(function(){ return dbTx("songs","readwrite",function(st){ st.put({id:rec.id,title:rec.title,artist:rec.artist,album:rec.album,dir:rec.dir,size:rec.size,addedAt:rec.addedAt,blob:file}); }); })
         .then(function(){ return rec; })
         .catch(function(){ rec.url=URL.createObjectURL(file); rec.blob=file; rec.saved=false; return rec; });
     });
     return Promise.all(puts);
   }).then(function(){
-    toast(audios.length+" song(s) picked. Saved in this browser only, not on other devices.",5000);
+    var albumSet={}; audios.forEach(function(f){ var m=parseMeta(f,f._strippedRel||f.name); albumSet[(m.album||"Singles")+"|"+(m.artist||"")]=1; });
+    var albumCount=Object.keys(albumSet).length;
+    var msg=audios.length+" song(s) in "+albumCount+" album(s). Saved in this browser only, not on other devices.";
+    if(skipped>0) msg+=" "+skipped+" file(s) skipped (not audio or album art).";
+    toast(msg,7000);
+    var st=$("mainFolderStatus"); if(st) st.textContent=msg;
     return reloadSaved();
   }).catch(function(err){ toast("Could not add songs: "+(err&&err.message?err.message:String(err)),6000); });
 }
@@ -1564,6 +1605,7 @@ function reloadSaved(){
     imgUrls={};
     imgs.forEach(function(im){ imgUrls[im.id]=URL.createObjectURL(im.blob); });
     tracks=songs.map(function(s){ var t={id:s.id,title:s.title,artist:s.artist,album:s.album,dir:s.dir,size:s.size,addedAt:s.addedAt,saved:true,url:URL.createObjectURL(s.blob),blob:s.blob}; return applyTrackEdits(t); });
+    (function(){ var seen={}, kept=[]; tracks.slice().sort(function(a,b){ return (b.addedAt||0)-(a.addedAt||0); }).forEach(function(t){ var k=(t.dir||"").toLowerCase()+"|"+String(t.title||"").toLowerCase()+"|"+(t.size||0); if(!seen[k]){ seen[k]=1; kept.push(t); } }); tracks=kept; })();
     tracks.sort(function(a,b){ return b.addedAt-a.addedAt; });
     var n=0,bytes=0; tracks.forEach(function(t){ if(t.saved){ n++; bytes+=t.size||0; } });
     savedStatsCache={n:n,bytes:bytes};
@@ -2243,11 +2285,153 @@ function renderPb(){
   });
   $("sleepStatus").textContent=sleepAfterTrack?"Sleep timer: stop after this track.":"";
 }
+/* ---------- Zip unpacking (pure inline JS, no CDN) ---------- */
+/* Minimal raw-DEFLATE decoder, used only when DecompressionStream is
+   unavailable. Stored (method 0) and deflated (method 8) entries only. */
+function inflateRaw(input){
+  var bytes=input instanceof Uint8Array ? input : new Uint8Array(input);
+  var pos=0, bitBuf=0, bitCnt=0;
+  function readBit(){ if(bitCnt===0){ bitBuf=pos<bytes.length ? bytes[pos++] : 0; bitCnt=8; } var b=bitBuf&1; bitBuf>>=1; bitCnt--; return b; }
+  function readBits(n){ var v=0; for(var i=0;i<n;i++) v|=readBit()<<i; return v; }
+  function build(lengths){
+    var count=new Array(16); for(var i=0;i<16;i++) count[i]=0;
+    for(var i=0;i<lengths.length;i++) count[lengths[i]]++;
+    count[0]=0;
+    var offs=new Array(16); offs[1]=0; for(var l=1;l<15;l++) offs[l+1]=offs[l]+count[l];
+    var symbols=new Array(lengths.length);
+    for(var s=0;s<lengths.length;s++){ if(lengths[s]!==0) symbols[offs[lengths[s]]++]=s; }
+    return {count:count, symbols:symbols};
+  }
+  function decode(huff){
+    var code=0, first=0, index=0;
+    for(var len=1;len<=15;len++){
+      code|=readBit();
+      var cnt=huff.count[len];
+      if(code-first<cnt) return huff.symbols[index+(code-first)];
+      index+=cnt; first+=cnt; first<<=1; code<<=1;
+    }
+    throw new Error("bad Huffman code in zip entry");
+  }
+  var lenBase=[3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+  var lenExt=[0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,0,0,0];
+  var distBase=[1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+  var distExt=[0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+  var out=[];
+  for(;;){
+    var finalBlock=readBits(1), btype=readBits(2);
+    if(btype===0){
+      bitCnt=0; bitBuf=0;
+      var len=bytes[pos]|(bytes[pos+1]<<8), nlen=bytes[pos+2]|(bytes[pos+3]<<8); pos+=4;
+      if((len&0xffff)!==((~nlen)&0xffff)) throw new Error("bad stored block in zip entry");
+      for(var i=0;i<len;i++) out.push(bytes[pos++]);
+    } else {
+      var litHuff, distHuff;
+      if(btype===1){
+        var litLen=new Array(288); for(var i=0;i<144;i++) litLen[i]=8; for(;i<256;i++) litLen[i]=9; for(;i<280;i++) litLen[i]=7; for(;i<288;i++) litLen[i]=8;
+        var distLen=new Array(32); for(var i=0;i<32;i++) distLen[i]=5;
+        litHuff=build(litLen); distHuff=build(distLen);
+      } else if(btype===2){
+        var hlit=readBits(5)+257, hdist=readBits(5)+1, hclen=readBits(4)+4;
+        var order=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+        var clLen=new Array(19); for(var i=0;i<19;i++) clLen[i]=0;
+        for(var i=0;i<hclen;i++) clLen[order[i]]=readBits(3);
+        var clHuff=build(clLen);
+        var allLen=new Array(hlit+hdist); var idx=0;
+        while(idx<hlit+hdist){
+          var sym=decode(clHuff);
+          if(sym<16){ allLen[idx++]=sym; }
+          else if(sym===16){ var rep=3+readBits(2), prev=idx?allLen[idx-1]:0; for(var k=0;k<rep;k++) allLen[idx++]=prev; }
+          else if(sym===17){ var rep=3+readBits(3); for(var k=0;k<rep;k++) allLen[idx++]=0; }
+          else if(sym===18){ var rep=11+readBits(7); for(var k=0;k<rep;k++) allLen[idx++]=0; }
+          else throw new Error("bad code-length symbol in zip entry");
+        }
+        litHuff=build(allLen.slice(0,hlit)); distHuff=build(allLen.slice(hlit));
+      } else throw new Error("bad deflate block type in zip entry");
+      for(;;){
+        var sym=decode(litHuff);
+        if(sym===256) break;
+        if(sym<256){ out.push(sym); }
+        else {
+          var li=sym-257; if(li<0||li>=29) throw new Error("bad length symbol in zip entry");
+          var length=lenBase[li]+readBits(lenExt[li]);
+          var dsym=decode(distHuff); if(dsym<0||dsym>=30) throw new Error("bad distance symbol in zip entry");
+          var dist=distBase[dsym]+readBits(distExt[dsym]);
+          var start=out.length-dist; if(start<0) throw new Error("bad distance in zip entry");
+          for(var k=0;k<length;k++) out.push(out[start+k]);
+        }
+      }
+    }
+    if(finalBlock) break;
+  }
+  return new Uint8Array(out);
+}
+async function extractZip(buf){
+  var bytes=new Uint8Array(buf), dv=new DataView(buf), eocd=-1;
+  var scanStart=bytes.length>66000 ? bytes.length-66000 : 0;
+  for(var i=bytes.length-22;i>=scanStart;i--){ if(bytes[i]===0x50&&bytes[i+1]===0x4b&&bytes[i+2]===0x05&&bytes[i+3]===0x06){ eocd=i; break; } }
+  if(eocd<0) throw new Error("Not a zip file (no end-of-central-directory record).");
+  var total=dv.getUint16(eocd+10,true), cdOff=dv.getUint32(eocd+16,true);
+  if(total===0xffff||cdOff===0xffffffff) throw new Error("ZIP64 archives are not supported in this browser version.");
+  var entries=[], p=cdOff;
+  for(var n=0;n<total;n++){
+    if(dv.getUint32(p,true)!==0x02014b50) throw new Error("Bad central directory in zip file.");
+    var method=dv.getUint16(p+10,true), compSize=dv.getUint32(p+20,true), fnLen=dv.getUint16(p+28,true), extraLen=dv.getUint16(p+30,true), commentLen=dv.getUint16(p+32,true), localOff=dv.getUint32(p+42,true);
+    var name=new TextDecoder("utf-8").decode(bytes.subarray(p+46,p+46+fnLen));
+    entries.push({name:name, method:method, compSize:compSize, localOff:localOff});
+    p+=46+fnLen+extraLen+commentLen;
+  }
+  var out=[];
+  for(var e=0;e<entries.length;e++){
+    var en=entries[e]; if(!en.name||en.name.slice(-1)==="/") continue;
+    var lp=en.localOff;
+    if(dv.getUint32(lp,true)!==0x04034b50) throw new Error("Bad local header in zip file for "+en.name);
+    var lfn=dv.getUint16(lp+26,true), lex=dv.getUint16(lp+28,true), dataStart=lp+30+lfn+lex;
+    var comp=bytes.subarray(dataStart, dataStart+en.compSize), data;
+    if(en.method===0){ data=comp.slice(); }
+    else if(en.method===8){
+      if(typeof DecompressionStream!=="undefined"){
+        try{ var ab=await new Response(new Blob([comp]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer(); data=new Uint8Array(ab); }
+        catch(err){ data=inflateRaw(comp); }
+      } else data=inflateRaw(comp);
+    }
+    else throw new Error("Unsupported zip compression method "+en.method+" for "+en.name);
+    out.push({path:en.name, data:data});
+  }
+  return out;
+}
+async function handleZipFile(file){
+  var st=$("mainFolderStatus"); if(st) st.textContent="Unpacking "+file.name+" …";
+  try{
+    var buf=await file.arrayBuffer();
+    var entries=await extractZip(buf);
+    var stripped=stripCommonRoot(entries.map(function(x){ return x.path; }));
+    var files=[], skipped=0;
+    entries.forEach(function(en, idx){
+      var rel=stripped[idx]; if(!rel||rel.slice(-1)==="/"){ skipped++; return; }
+      var low=rel.toLowerCase(), isAudio=/\.(mp3|m4a)$/.test(low), isImg=/\.(jpg|jpeg|png|webp)$/.test(low);
+      if(!isAudio&&!isImg){ skipped++; return; }
+      var base=rel.split("/").pop();
+      var type=isAudio ? (low.slice(-4)===".mp3" ? "audio/mpeg" : "audio/mp4") : (low.slice(-4)===".png" ? "image/png" : (low.slice(-5)===".webp" ? "image/webp" : "image/jpeg"));
+      var f=new File([en.data], base, {type:type});
+      f._relPath=rel; try{ Object.defineProperty(f,"webkitRelativePath",{value:rel}); }catch(err){}
+      f._strippedRel=rel; files.push(f);
+    });
+    if(st) st.textContent="Unpacked "+entries.length+" entries, "+files.length+" audio/art files, "+skipped+" skipped (not audio or album art).";
+    if(!files.length){ toast("No .mp3 / .m4a songs found in that .zip.",6000); return; }
+    addFiles(files, {alreadyStripped:true});
+  }catch(err){
+    var msg=err&&err.message?err.message:String(err);
+    toast("Could not unpack that .zip: "+msg+" — files were not added.",8000);
+    if(st) st.textContent="Zip unpack failed: "+msg;
+  }
+}
+function pickZip(){ document.getElementById("zipInput").click(); }
 /* Pickers */
 function pickSongs(){ document.getElementById("pickInput").click(); }
+function pickMainFolder(){ pickFolder(); }
 function pickFolder(){
   if(window.showDirectoryPicker){
-    window.showDirectoryPicker().then(function(h){ return collectDir(h,""); }).then(function(files){ addFiles(files); }).catch(function(err){ if(err&&err.name!=="AbortError") document.getElementById("folderInput").click(); });
+    window.showDirectoryPicker().then(function(h){ return collectDir(h,""); }).then(function(files){ addFiles(files, {stripRoot:true}); }).catch(function(err){ if(err&&err.name!=="AbortError") document.getElementById("folderInput").click(); });
   } else document.getElementById("folderInput").click();
 }
 async function collectDir(handle, prefix){
@@ -2260,8 +2444,9 @@ async function collectDir(handle, prefix){
   out.forEach(function(f){ try{ Object.defineProperty(f,"webkitRelativePath",{value:f._relPath.replace(/^\//,"")}); }catch(e){} });
   return out;
 }
-document.getElementById("pickInput").addEventListener("change", function(){ addFiles(this.files); this.value=""; });
-document.getElementById("folderInput").addEventListener("change", function(){ addFiles(this.files); this.value=""; });
+document.getElementById("pickInput").addEventListener("change", function(){ addFiles(this.files, {}); this.value=""; });
+document.getElementById("folderInput").addEventListener("change", function(){ addFiles(this.files, {stripRoot:true}); this.value=""; });
+document.getElementById("zipInput").addEventListener("change", function(){ if(this.files[0]) handleZipFile(this.files[0]); this.value=""; });
 if($("discoverPlayAll")) $("discoverPlayAll").addEventListener("click", discoverNotWired);
 if($("discoverMore")) $("discoverMore").addEventListener("click", discoverNotWired);
 /* Initial render */
