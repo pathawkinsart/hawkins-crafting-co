@@ -982,9 +982,14 @@ Music/Artist/Album/ song.mp3, cover.jpg, record.jpg</pre>
     <input id="ytLoaderInput" type="url" placeholder="Paste a YouTube link here" style="width:100%;max-width:560px;margin:6px 0;">
     <button type="button" onclick="downloadFromYoutube()">⬇ Download from YouTube</button>
     <button type="button" onclick="saveYtLoaderBackend()">Save backend URL</button><br>
-    <input id="ytLoaderBackend" type="url" placeholder="Loader backend URL (leave empty until you pick a host)" style="width:100%;max-width:560px;">
+    <input id="ytLoaderBackend" type="url" placeholder="Loader backend URL (your free cloud loader, https://…)" style="width:100%;max-width:560px;">
+    <input id="ytLoaderToken" type="text" placeholder="Loader token (enter once, on this device)" style="width:100%;max-width:560px;margin:6px 0;">
+    <button type="button" onclick="saveYtLoaderToken()">Save token</button>
+    <button type="button" onclick="changeYtDownloadFolder()">Change download folder</button><br>
+    <div id="ytLoaderFolderStatus" style="margin-top:6px;">Download folder: not set up on this device yet — you will be asked on your first download.</div>
     <div id="ytLoaderStatus" style="margin-top:6px;">Status: loader backend not connected yet — paste a link and the video ID will show here, but no download is attempted until a backend URL is saved.</div>
-    <span style="font-size:13px;">Downloaded songs save to IndexedDB in this browser only, grouped under “YouTube Downloads”, with cover art when the backend returns it. This page never claims a download worked without a real audio file. A backend is required: a static page alone cannot download from YouTube.</span>
+    <a id="ytLoaderMp3Link" href="#" download hidden style="display:none;margin-top:6px;">⬇ Download this MP3 file to your phone</a><br>
+    <span style="font-size:13px;">Downloaded songs save to IndexedDB in this browser only, grouped under “YouTube Downloads”, with cover art when the backend returns it. This page never claims a download worked without a real audio file. A backend is required: a static page alone cannot download from YouTube. <b>Download folder on this device:</b> on your first download on THIS device, you will be asked to create or pick a folder on that device (for example “Forge Music”) — each device asks once, on that device, and a folder from another device does not carry over. On Chrome/Edge (desktop and Android) the song file is saved straight into that folder. On iPhone/iPad Safari, the browser cannot pick a folder directly, so instead tap “Download this MP3 file to your phone” after a download — the Files save sheet opens, where you can create a “Forge Music” folder in Files (Files &gt; Browse &gt; On My iPhone &gt; New Folder) and save into it.</span>
   </div></div>
   <!-- The Crate -->
   <section id="coverflow-section">
@@ -2452,6 +2457,121 @@ function saveYtLoaderBackend(){
   try{ localStorage.setItem("forgeYtLoaderBackend", v); }catch(e){}
   setYtLoaderStatus("ready", v ? "Loader backend saved: "+v+". Paste a YouTube link and tap Download." : "Loader backend not connected yet — no download will be attempted until a backend URL is saved.");
 }
+function getYtLoaderToken(){
+  var el=$("ytLoaderToken");
+  if(el && el.value.trim()) return el.value.trim();
+  try{ return (localStorage.getItem("forgeYtLoaderToken")||"").trim(); }catch(e){ return ""; }
+}
+function saveYtLoaderToken(){
+  var v=$("ytLoaderToken") ? $("ytLoaderToken").value.trim() : "";
+  try{ localStorage.setItem("forgeYtLoaderToken", v); }catch(e){}
+  setYtLoaderStatus("ready", v ? "Loader token saved in this browser. Paste a YouTube link and tap Download." : "Loader token cleared — downloads will be refused (401) until a token is saved on this device.");
+}
+/* ---------- YouTube download FOLDER, per device (Patrick: "it should ask
+   to create a folder on the machine it open on") ----------
+   Chrome/Edge (desktop + Android) support File System Access:
+   showDirectoryPicker lets the user pick an existing folder OR create a
+   new one in the picker ("New folder" -> name it Forge Music). The handle
+   is kept in a SEPARATE IndexedDB database (forge-folder, v1) so the song
+   library (forge-player, v1) is never migrated. Permission is checked
+   silently on load (no prompt); it is only requested inside a user
+   gesture (first download, or Change download folder).
+   iOS Safari has no File System Access: folder picking is honestly
+   unavailable there. The fallback is the MP3 file download link, which
+   opens the iOS Files save/share sheet, where the user creates/picks a
+   folder in Files himself. Nothing is faked as a folder save on iOS.
+   The folder choice is per device: it lives in this browser only, and
+   a folder chosen on another device never carries over here. */
+var ytFolderHandle=null, ytFolderName="";
+function ytFolderSupported(){ return typeof window.showDirectoryPicker==="function"; }
+function setYtFolderStatus(msg){ var el=$("ytLoaderFolderStatus"); if(el) el.textContent="Download folder: "+msg; }
+function openFolderDB(){
+  return new Promise(function(res,rej){
+    if(!window.indexedDB){ rej(new Error("IndexedDB is not available.")); return; }
+    var req=indexedDB.open("forge-folder",1);
+    req.onupgradeneeded=function(){ var d=req.result;
+      if(!d.objectStoreNames.contains("settings")) d.createObjectStore("settings",{keyPath:"id"}); };
+    req.onsuccess=function(){ res(req.result); };
+    req.onerror=function(){ rej(req.error||new Error("Could not open folder storage.")); };
+  });
+}
+function loadYtFolderHandle(){
+  if(!ytFolderSupported()){ setYtFolderStatus("this browser cannot pick a folder directly (for example iPhone Safari) — after a download, use “Download this MP3 file to your phone” and pick a folder in the Files save sheet, or create a “Forge Music” folder in Files first."); return Promise.resolve(null); }
+  return openFolderDB().then(function(db){
+    return new Promise(function(res){
+      try{
+        var tx=db.transaction("settings","readonly"), st=tx.objectStore("settings");
+        var req=st.get("downloadFolder");
+        req.onsuccess=function(){
+          var rec=req.result;
+          if(rec && rec.handle){
+            // Silent check only: query, never request, on load.
+            var qp=rec.handle.queryPermission ? rec.handle.queryPermission({mode:"readwrite"}) : Promise.resolve("granted");
+            Promise.resolve(qp).then(function(p){
+              if(p==="granted"){ ytFolderHandle=rec.handle; ytFolderName=rec.name||rec.handle.name||""; setYtFolderStatus(ytFolderName ? ("“"+ytFolderName+"” on this device — later downloads go there without asking again. Tap “Change download folder” to pick a different one.") : "set on this device."); }
+              else setYtFolderStatus("not confirmed on this device yet — you will be asked on your first download.");
+              res(ytFolderHandle);
+            }).catch(function(){ setYtFolderStatus("not confirmed on this device yet — you will be asked on your first download."); res(null); });
+          } else { setYtFolderStatus("not set up on this device yet — you will be asked on your first download."); res(null); }
+        };
+        req.onerror=function(){ setYtFolderStatus("not set up on this device yet — you will be asked on your first download."); res(null); };
+      }catch(e){ setYtFolderStatus("not set up on this device yet — you will be asked on your first download."); res(null); }
+    });
+  }).catch(function(){ setYtFolderStatus("not set up on this device yet — you will be asked on your first download."); return null; });
+}
+function askYtDownloadFolder(){
+  if(!ytFolderSupported()){ setYtFolderStatus("this browser cannot pick a folder directly — after a download, use “Download this MP3 file to your phone” and pick a folder in the Files save sheet."); return Promise.resolve(false); }
+  return window.showDirectoryPicker({mode:"readwrite"}).then(function(handle){
+    ytFolderHandle=handle; ytFolderName=handle.name||"";
+    try{ localStorage.removeItem("forgeYtFolderDeclined"); }catch(e){}
+    return openFolderDB().then(function(db){
+      return new Promise(function(res){
+        try{
+          var tx=db.transaction("settings","readwrite"), st=tx.objectStore("settings");
+          st.put({id:"downloadFolder", handle:handle, name:ytFolderName});
+          tx.oncomplete=function(){ setYtFolderStatus("“"+ytFolderName+"” on this device — later downloads go there without asking again."); res(true); };
+          tx.onerror=function(){ setYtFolderStatus("“"+ytFolderName+"” for this session (could not remember it — you may be asked again)."); res(true); };
+        }catch(e){ setYtFolderStatus("“"+ytFolderName+"” for this session."); res(true); }
+      });
+    }).catch(function(){ setYtFolderStatus("“"+ytFolderName+"” for this session."); return true; });
+  }).catch(function(err){
+    if(err && err.name==="AbortError"){
+      try{ localStorage.setItem("forgeYtFolderDeclined","1"); }catch(e){}
+      setYtFolderStatus("no folder chosen on this device — downloads still save in the player, and you can tap “Download this MP3 file to your phone” to save a file yourself. Tap “Change download folder” any time to be asked again.");
+      return false;
+    }
+    setYtFolderStatus("could not pick a folder ("+(err&&err.message?err.message:String(err))+") — downloads still save in the player; tap “Change download folder” to try again.");
+    return false;
+  });
+}
+function changeYtDownloadFolder(){
+  try{ localStorage.removeItem("forgeYtFolderDeclined"); }catch(e){}
+  askYtDownloadFolder();
+}
+function ytFolderDeclined(){ try{ return localStorage.getItem("forgeYtFolderDeclined")==="1"; }catch(e){ return false; } }
+function saveBlobToYtFolder(blob, filename){
+  // Returns a promise resolving to a short note, or null if no folder.
+  // Permission request here runs after a download completes (outside the
+  // original tap), so a denied/blocked request falls back honestly to
+  // the MP3 link instead of claiming a folder save.
+  if(!ytFolderHandle) return Promise.resolve(null);
+  return Promise.resolve(ytFolderHandle.queryPermission ? ytFolderHandle.queryPermission({mode:"readwrite"}) : "granted")
+    .then(function(p){
+      if(p!=="granted" && ytFolderHandle.requestPermission){
+        return ytFolderHandle.requestPermission({mode:"readwrite"});
+      }
+      return p;
+    })
+    .then(function(p){
+      if(p!=="granted") return "Folder save skipped: permission for “"+(ytFolderName||"")+"” was not granted — use “Download this MP3 file to your phone” instead.";
+      return ytFolderHandle.getFileHandle(filename,{create:true}).then(function(fh){
+        return fh.createWritable().then(function(w){
+          return w.write(blob).then(function(){ return w.close(); });
+        });
+      }).then(function(){ return "Saved “"+filename+"” into your “"+(ytFolderName||"")+"” folder on this device."; });
+    })
+    .catch(function(err){ return "Folder save failed ("+(err&&err.message?err.message:String(err))+") — the song is still saved in the player, and you can tap “Download this MP3 file to your phone” instead."; });
+}
 function extractYtId(url){
   var u=String(url||"").trim();
   if(/^[A-Za-z0-9_-]{11}$/.test(u)) return u;
@@ -2477,8 +2597,22 @@ function downloadFromYoutube(urlArg){
     setYtLoaderStatus("failed", "Backend URL is http:// but this page is https:// — the browser will block it. The backend must be https:// too.");
     return;
   }
+  // Per-device folder prompt, on FIRST loader use on this device only.
+  // If the user cancels, the download still goes ahead to the player
+  // library + MP3 link — a declined folder never blocks a download.
+  var afterFolder=function(){
+    proceedYtDownload(url, id, backend);
+  };
+  if(ytFolderSupported() && !ytFolderHandle && !ytFolderDeclined()){
+    setYtLoaderStatus("queued", "Video ID "+id+" — first, pick a download folder on this device (or create one, e.g. “Forge Music”).");
+    askYtDownloadFolder().then(function(){ afterFolder(); });
+    return;
+  }
+  afterFolder();
+}
+function proceedYtDownload(url, id, backend){
   setYtLoaderStatus("queued", "Video ID "+id+" — queued, contacting loader backend…");
-  fetch(backend+"/download", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({url:url})})
+  fetch(backend+"/download", {method:"POST", headers:{"Content-Type":"application/json", "X-Forge-Token": getYtLoaderToken()}, body:JSON.stringify({url:url})})
     .then(function(res){
       if(!res.ok) return res.text().then(function(t){ throw new Error("Backend returned "+res.status+": "+(t||"").slice(0,300)); });
       var dec=function(h){ var v=res.headers.get(h); try{ return v ? decodeURIComponent(v) : ""; }catch(e){ return v||""; } };
@@ -2494,18 +2628,41 @@ function downloadFromYoutube(urlArg){
         var audio=new File([blob], safe+"."+ext, {type:blob.type||"audio/mpeg"});
         audio._relPath="YouTube Downloads/"+safe+"."+ext;
         var files=[audio];
-        var done=function(){ setYtLoaderStatus("saved", "Saved “"+title+"” ("+fmtSize(blob.size)+") to this browser only, under YouTube Downloads. It is now in your crate."); };
+        var done=function(folderNote){
+          // MP3 file link: the honest fallback on every browser, and the
+          // iOS Files route — tapping it opens the save/share sheet.
+          try{
+            var link=$("ytLoaderMp3Link");
+            if(link){ link.href=URL.createObjectURL(blob); link.download=safe+"."+ext; link.hidden=false; link.style.display="inline-block"; }
+          }catch(e){}
+          var base="Saved “"+title+"” ("+fmtSize(blob.size)+") to this browser only, under YouTube Downloads. It is now in your crate.";
+          if(folderNote) base+=" "+folderNote;
+          else if(!ytFolderSupported()) base+=" On this browser, tap “Download this MP3 file to your phone” above and pick a folder in the Files save sheet (or create a “Forge Music” folder in Files first).";
+          setYtLoaderStatus("saved", base);
+        };
+        var finishWithFolder=function(cblob){
+          // Folder save (Chrome/Edge) runs alongside the player-library
+          // save; it never replaces it, and a folder failure never
+          // un-saves the song. Cover goes in as "<title>-cover.jpg" so
+          // one download's cover never overwrites another's.
+          var folderJobs=[saveBlobToYtFolder(blob, safe+"."+ext)];
+          if(cblob && cblob.size>0) folderJobs.push(saveBlobToYtFolder(cblob, safe+"-cover.jpg"));
+          Promise.all(folderJobs).then(function(notes){
+            var note=notes.filter(function(n){ return !!n; }).join(" ");
+            done(note||null);
+          }).catch(function(){ done(null); });
+        };
         if(coverUrl){
           var full=coverUrl.indexOf("http")===0 ? coverUrl : backend+coverUrl;
-          fetch(full).then(function(r){ return r.ok ? r.blob() : null; }).then(function(cblob){
+          fetch(full, {headers:{"X-Forge-Token": getYtLoaderToken()}}).then(function(r){ return r.ok ? r.blob() : null; }).then(function(cblob){
             if(cblob && cblob.size>0){
               var cov=new File([cblob], "cover.jpg", {type:cblob.type||"image/jpeg"});
               cov._relPath="YouTube Downloads/cover.jpg";
               files.unshift(cov);
             }
-            addFiles(files, {alreadyStripped:true}); done();
-          }).catch(function(){ addFiles(files, {alreadyStripped:true}); done(); });
-        } else { addFiles(files, {alreadyStripped:true}); done(); }
+            addFiles(files, {alreadyStripped:true}); finishWithFolder(cblob);
+          }).catch(function(){ addFiles(files, {alreadyStripped:true}); finishWithFolder(null); });
+        } else { addFiles(files, {alreadyStripped:true}); finishWithFolder(null); }
       });
     })
     .catch(function(err){
@@ -2519,7 +2676,12 @@ function downloadFromYoutube(urlArg){
     var saved=localStorage.getItem("forgeYtLoaderBackend")||"";
     var el=document.getElementById("ytLoaderBackend");
     if(el && saved) el.value=saved;
+    var tok=localStorage.getItem("forgeYtLoaderToken")||"";
+    var tel=document.getElementById("ytLoaderToken");
+    if(tel && tok) tel.value=tok;
   }catch(e){}
+  // Silent folder check only (queryPermission, never a prompt, on load).
+  try{ loadYtFolderHandle(); }catch(e){}
 })();
 /* Pickers */
 function pickSongs(){ document.getElementById("pickInput").click(); }
