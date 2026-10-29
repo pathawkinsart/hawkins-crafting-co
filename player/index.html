@@ -977,7 +977,15 @@ img[src*="i.ytimg.com"][src*="maxresdefault"] { object-view-box: inset(0 21.875%
 Music/Artist/Album/ song.mp3, cover.jpg, record.jpg</pre>
   <span>On iPhone, folder picking is unreliable, so upload ONE .zip of your main Music folder instead — it is unpacked in this browser, no files leave this device.</span>
   <a href="https://music.youtube.com" target="_blank" rel="noopener">Open YouTube Music in a new tab</a><br>
-  <span>Download from YouTube: <b>NOT WIRED YET</b> — the download port is a separate project. This page never pretends a download worked.</span></div>
+  <div id="ytLoaderBox" style="border:1px solid #555;padding:10px;margin-top:8px;background:#1e1e1e;">
+    <b>YouTube download loader</b> — paste a YouTube / YouTube Music link, download it, and save it in this browser (same device only).<br>
+    <input id="ytLoaderInput" type="url" placeholder="Paste a YouTube link here" style="width:100%;max-width:560px;margin:6px 0;">
+    <button type="button" onclick="downloadFromYoutube()">⬇ Download from YouTube</button>
+    <button type="button" onclick="saveYtLoaderBackend()">Save backend URL</button><br>
+    <input id="ytLoaderBackend" type="url" placeholder="Loader backend URL (leave empty until you pick a host)" style="width:100%;max-width:560px;">
+    <div id="ytLoaderStatus" style="margin-top:6px;">Status: loader backend not connected yet — paste a link and the video ID will show here, but no download is attempted until a backend URL is saved.</div>
+    <span style="font-size:13px;">Downloaded songs save to IndexedDB in this browser only, grouped under “YouTube Downloads”, with cover art when the backend returns it. This page never claims a download worked without a real audio file. A backend is required: a static page alone cannot download from YouTube.</span>
+  </div></div>
   <!-- The Crate -->
   <section id="coverflow-section">
     <div id="coverflow">
@@ -1057,7 +1065,7 @@ Music/Artist/Album/ song.mp3, cover.jpg, record.jpg</pre>
         <input id="linkInput" type="url" placeholder="Paste a YouTube, Spotify, or Apple Music link" enterkeyhint="go">
         <button id="addBtn">Add</button>
       </div>
-      <div id="searchHint">Paste a link above to add songs or albums. Spotify and Apple Music links get matched to the same songs on YouTube. <b>Adding from a link is NOT WIRED YET in this browser version</b> — use the YouTube Music link below to stream instead.</div>
+      <div id="searchHint">Paste a YouTube link above to download it with the YouTube download loader (top of the page). Spotify and Apple Music links are not matched yet — paste the YouTube link for the same song. If no loader backend is connected, no download is attempted and nothing is faked — use the YouTube Music link below to stream instead.</div>
       <p style="padding:0 16px;"><a href="https://music.youtube.com" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600;">Open music.youtube.com in a new tab (stream only)</a></p>
       <div id="searchResults"></div>
     </section>
@@ -1430,7 +1438,9 @@ document.addEventListener("DOMContentLoaded", function(){});
    Same DOM/CSS as ~/workspace/music-app/web/. No native bridge,
    no YouTube iframe API, no native code. HTML5 audio + file picker +
    IndexedDB (this browser, this device only). Download-from-YouTube
-   is kept in the UI but is NOT WIRED YET — it never fakes a download. */
+   goes through a separate loader backend (see forge-yt-loader/server.py):
+   no backend URL saved => no download is attempted, and a download is
+   only ever saved when the backend returns a real audio file. */
 var $ = function(id){ return document.getElementById(id); };
 function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 function fmtTime(s){ if(!isFinite(s)||s<0) s=0; s=Math.floor(s); return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2); }
@@ -1440,7 +1450,7 @@ function toast(msg, ms){
   t.textContent=msg; t.hidden=false;
   clearTimeout(toast._t); toast._t=setTimeout(function(){ t.hidden=true; }, ms||4500);
 }
-var NOT_WIRED = "Download is NOT WIRED YET in this browser version. The YouTube download port is a separate project — this page never pretends a download worked. You can stream on YouTube Music instead (link in Search).";
+var NOT_WIRED = "Use the YouTube download loader at the top of the page. It needs a loader backend URL saved there; until one is connected, no download is attempted and nothing is faked. You can stream on YouTube Music instead (link in Search).";
 function notWired(){ toast(NOT_WIRED, 7000); }
 
 /* ---------- IndexedDB: songs + images, this browser only ---------- */
@@ -2172,7 +2182,7 @@ $("carPlay").addEventListener("click", togglePlay);
 $("carVol").addEventListener("input", function(){ var a=ensureAudio(); a.volume=this.value/100; });
 $("settingsBtn").addEventListener("click", function(){
   $("ytAuthStatus").textContent="Not signed in — browser version has no YouTube sign-in. Use music.youtube.com in a new tab instead.";
-  $("dlDiag").textContent="Download: NOT WIRED YET in this browser version. No download errors recorded, because no download is attempted.";
+  $("dlDiag").textContent="Download: YouTube download loader at the top of the page. Backend: "+(function(){ try{ return localStorage.getItem("forgeYtLoaderBackend")||"not connected yet — no download is attempted until a backend URL is saved."; }catch(e){ return "not connected yet."; } })();
   $("artDiag").textContent="Artwork in this browser comes from cover.jpg / folder.jpg in the song folder, or from Change artwork in Edit. No online artwork lookup in this version.";
   $("settingsSheet").hidden=false;
 });
@@ -2208,8 +2218,10 @@ $("plPickerCancel").addEventListener("click", function(){ $("plPicker").hidden=t
 $("plPickerNew").addEventListener("click", function(){ $("plPicker").hidden=true; $("plNameInput").value=""; $("plNameSheet").hidden=false; });
 $("addBtn").addEventListener("click", function(){
   var url=$("linkInput").value.trim();
-  if(!url){ toast("Paste a YouTube, Spotify, or Apple Music link first.",4000); return; }
-  $("searchResults").innerHTML='<div style="padding:16px;color:var(--text-secondary);font-size:14.5px;">Adding from a link needs the YouTube download/search port, which is <b>NOT WIRED YET</b> in this browser version. Nothing was downloaded and nothing was faked. <a href="https://music.youtube.com" target="_blank" rel="noopener">Open YouTube Music in a new tab to stream it instead</a>.</div>';
+  if(!url){ toast("Paste a YouTube link first.",4000); return; }
+  if($("ytLoaderInput")) $("ytLoaderInput").value=url;
+  $("searchResults").innerHTML='<div style="padding:16px;color:var(--text-secondary);font-size:14.5px;">YouTube link sent to the download loader at the top of the page — check its status there. If no loader backend is connected, no download is attempted and nothing is saved.</div>';
+  downloadFromYoutube(url);
 });
 $("discoverGo").addEventListener("click", discoverNotWired);
 $("discoverRefresh").addEventListener("click", discoverNotWired);
@@ -2426,6 +2438,89 @@ async function handleZipFile(file){
   }
 }
 function pickZip(){ document.getElementById("zipInput").click(); }
+/* ---------- YouTube DOWNLOAD loader (needs a backend — see forge-yt-loader) ---------- */
+/* A static page alone cannot download from YouTube (CORS, cipher, bot checks).
+   This UI only ever saves a file the backend actually returned. No backend URL
+   saved => no download is attempted, and the status says so plainly. */
+function getYtLoaderBackend(){
+  var el=$("ytLoaderBackend");
+  if(el && el.value.trim()) return el.value.trim().replace(/\/+$/,"");
+  try{ return (localStorage.getItem("forgeYtLoaderBackend")||"").trim().replace(/\/+$/,""); }catch(e){ return ""; }
+}
+function saveYtLoaderBackend(){
+  var v=$("ytLoaderBackend") ? $("ytLoaderBackend").value.trim().replace(/\/+$/,"") : "";
+  try{ localStorage.setItem("forgeYtLoaderBackend", v); }catch(e){}
+  setYtLoaderStatus("ready", v ? "Loader backend saved: "+v+". Paste a YouTube link and tap Download." : "Loader backend not connected yet — no download will be attempted until a backend URL is saved.");
+}
+function extractYtId(url){
+  var u=String(url||"").trim();
+  if(/^[A-Za-z0-9_-]{11}$/.test(u)) return u;
+  var m=u.match(/[?&]v=([A-Za-z0-9_-]{11})/) || u.match(/youtu\.be\/([A-Za-z0-9_-]{11})/)
+    || u.match(/\/(shorts|embed|live|v)\/([A-Za-z0-9_-]{11})/);
+  if(m) return m[1] || m[2];
+  return "";
+}
+function setYtLoaderStatus(state, msg){
+  var el=$("ytLoaderStatus"); if(el) el.textContent="Status ("+state+"): "+msg;
+}
+function downloadFromYoutube(urlArg){
+  var url=(urlArg!==undefined ? urlArg : ($("ytLoaderInput") ? $("ytLoaderInput").value : "")).trim();
+  if(!url){ setYtLoaderStatus("failed", "Paste a YouTube link first."); toast("Paste a YouTube link first.",4000); return; }
+  var id=extractYtId(url);
+  if(!id){ setYtLoaderStatus("failed", "Could not find a YouTube video ID in that link. Paste a watch, youtu.be, or Shorts link."); toast("Could not find a YouTube video ID in that link.",5000); return; }
+  var backend=getYtLoaderBackend();
+  if(!backend){
+    setYtLoaderStatus("not connected", "Video ID "+id+" — loader backend not connected yet. Save a loader backend URL above first; no download was attempted and nothing was saved.");
+    return;
+  }
+  if(window.location.protocol==="https:" && backend.indexOf("http://")===0){
+    setYtLoaderStatus("failed", "Backend URL is http:// but this page is https:// — the browser will block it. The backend must be https:// too.");
+    return;
+  }
+  setYtLoaderStatus("queued", "Video ID "+id+" — queued, contacting loader backend…");
+  fetch(backend+"/download", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({url:url})})
+    .then(function(res){
+      if(!res.ok) return res.text().then(function(t){ throw new Error("Backend returned "+res.status+": "+(t||"").slice(0,300)); });
+      var dec=function(h){ var v=res.headers.get(h); try{ return v ? decodeURIComponent(v) : ""; }catch(e){ return v||""; } };
+      var title=dec("X-Title-Encoded")||res.headers.get("X-Title")||("YouTube "+id);
+      var artist=dec("X-Artist-Encoded")||res.headers.get("X-Artist")||"YouTube";
+      var album=dec("X-Album-Encoded")||res.headers.get("X-Album")||"YouTube Downloads";
+      var coverUrl=res.headers.get("X-Cover-Url")||"";
+      var ext=(res.headers.get("X-Ext")||"mp3").replace(/[^a-z0-9]/gi,"")||"mp3";
+      setYtLoaderStatus("downloading", "Video ID "+id+" — backend is downloading “"+title+"”…");
+      return res.blob().then(function(blob){
+        if(!blob || blob.size<1024) throw new Error("Backend returned a file too small to be a song ("+(blob?blob.size:0)+" bytes) — not saved.");
+        var safe=title.replace(/[\\/:*?"<>|]+/g,"").trim()||("YouTube "+id);
+        var audio=new File([blob], safe+"."+ext, {type:blob.type||"audio/mpeg"});
+        audio._relPath="YouTube Downloads/"+safe+"."+ext;
+        var files=[audio];
+        var done=function(){ setYtLoaderStatus("saved", "Saved “"+title+"” ("+fmtSize(blob.size)+") to this browser only, under YouTube Downloads. It is now in your crate."); };
+        if(coverUrl){
+          var full=coverUrl.indexOf("http")===0 ? coverUrl : backend+coverUrl;
+          fetch(full).then(function(r){ return r.ok ? r.blob() : null; }).then(function(cblob){
+            if(cblob && cblob.size>0){
+              var cov=new File([cblob], "cover.jpg", {type:cblob.type||"image/jpeg"});
+              cov._relPath="YouTube Downloads/cover.jpg";
+              files.unshift(cov);
+            }
+            addFiles(files, {alreadyStripped:true}); done();
+          }).catch(function(){ addFiles(files, {alreadyStripped:true}); done(); });
+        } else { addFiles(files, {alreadyStripped:true}); done(); }
+      });
+    })
+    .catch(function(err){
+      var msg=err&&err.message?err.message:String(err);
+      setYtLoaderStatus("failed", "Video ID "+id+" — download failed: "+msg+" Nothing was saved for this link.");
+      toast("YouTube download failed: "+msg,8000);
+    });
+}
+(function initYtLoaderBackend(){
+  try{
+    var saved=localStorage.getItem("forgeYtLoaderBackend")||"";
+    var el=document.getElementById("ytLoaderBackend");
+    if(el && saved) el.value=saved;
+  }catch(e){}
+})();
 /* Pickers */
 function pickSongs(){ document.getElementById("pickInput").click(); }
 function pickMainFolder(){ pickFolder(); }
