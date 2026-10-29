@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Forge Music — a hidden, browser-only music player. No account, no install. Songs you save are kept in this browser, on this device only.">
+<title>Forge Music — Hawkins Crafting Co.</title>
+<style>
+body{margin:0;background:#1a1a1a;color:#eee;font-family:sans-serif;font-size:18px}
+header{background:#222;padding:10px;border-bottom:2px solid #ff7a1a}
+header b{color:#ffb066}
+a{color:#ffb066}
+nav button{background:#333;color:#fff;border:1px solid #555;padding:10px 12px;margin:4px 4px 0 0;font-size:17px;cursor:pointer}
+nav button.on{background:#ff7a1a;color:#000}
+.view{display:none;padding:12px;max-width:900px}
+.view.on{display:block}
+.warn{background:#3a2400;border:2px solid #ff7a1a;padding:10px;margin:10px 0}
+.ok{background:#12351a;border:1px solid #2a7a3a;padding:10px;margin:10px 0}
+button.big{background:#ff7a1a;color:#000;border:0;padding:14px 18px;font-size:19px;margin:6px 6px 6px 0;cursor:pointer}
+button{font-size:17px;padding:10px 12px;margin:4px;cursor:pointer}
+input[type=text]{width:95%;font-size:19px;padding:10px;background:#222;color:#fff;border:1px solid #555}
+input[type=file]{font-size:16px;margin:6px 0}
+.song{border-bottom:1px solid #333;padding:10px 2px}
+.song b{font-size:19px}
+.small{font-size:15px;color:#bbb}
+#np{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+#cover{width:160px;height:160px;background:#333;object-fit:cover}
+#disc{width:160px;height:160px;border-radius:50%;object-fit:cover;background:#111;border:2px solid #555}
+.tile{background:#2a2a2a;border:1px solid #444;padding:16px;margin:8px 0;font-size:20px;cursor:pointer}
+#drop{border:2px dashed #ff7a1a;padding:18px;margin:10px 0;text-align:center}
+#drop.over{background:#3a2400}
+audio{width:100%;margin:8px 0}
+li{margin:6px 0}
+</style></head><body>
+<header><b>&#128293; Forge Music</b> <span class="small">hidden browser player — no install, no account</span>
+<nav>
+<button type="button" onclick="show('home',this)" class="on">Home</button>
+<button type="button" onclick="show('local',this)">Local</button>
+<button type="button" onclick="show('yt',this)">YouTube Music</button>
+<button type="button" onclick="show('sync',this)">Sync</button>
+<button type="button" onclick="show('junior',this)">Junior-lite</button>
+</nav></header>
+
+<div id="home" class="view on">
+<div class="warn"><b>YouTube Music download: NOT WIRED YET.</b><br>
+This page plays songs you pick, and links out to YouTube Music for streaming.
+It never pretends a download worked. The download port (yt-dlp / InnerTube) is a separate project, not this page.</div>
+<div class="ok"><b>Saved in this browser only, not on other devices.</b><br>
+Songs you pick here are saved in this browser's IndexedDB, on this device only.
+Open this page on another phone, tablet, or browser and those songs will <b>not</b> be there — you would need to pick the same files there.
+There is no cloud, no server, and no account on this page to move them for you. That is a deliberate, locked choice, not a missing toggle.</div>
+<div class="tile" onclick="show('local')">Local player — pick songs, they stay in this browser</div>
+<div class="tile" onclick="show('yt')">YouTube Music — stream in a new tab (no download)</div>
+<div class="tile" onclick="show('sync')">Sync — how to get the same songs on another device, by hand</div>
+<div class="tile" onclick="show('junior')">Junior-lite — browser-safe checks, backup, cleanup guidance</div>
+<p id="homeSaved" class="small"></p>
+<p class="small"><a href="../">Back to Hawkins Crafting Co.</a> &middot; This page is unlisted: no navigation link, no sitemap entry, and search engines are asked not to index it.</p>
+</div>
+
+<div id="local" class="view">
+<div id="np">
+<img id="cover" alt="">
+<img id="disc" alt="">
+<div>
+<div id="npTitle" style="font-size:22px"><b>No song selected</b></div>
+<div id="npMeta" class="small"></div>
+<div id="npState" class="small"></div>
+<audio id="player" controls preload="metadata"></audio><br>
+<button class="big" onclick="togglePlay()">Play / Pause</button>
+<button onclick="stopSong()">Stop</button>
+<button onclick="favCurrent()">&#9733; Favorite</button>
+</div></div>
+<p><input type="text" id="q" placeholder="Search song, artist, or album…" oninput="render()"></p>
+<p>
+<button onclick="setPl('all')">All</button>
+<button onclick="setPl('recent')">Recently Added</button>
+<button onclick="setPl('played')">Most Played</button>
+<button onclick="setPl('fav')">Favorites</button>
+<button onclick="reloadSaved()">Reload saved songs</button>
+</p>
+<div id="savedBox" class="ok"></div>
+<p>
+<label><input type="checkbox" id="saveBox" checked> Save picked songs in this browser (IndexedDB)</label><br>
+<span class="small">Untick this to play picked files for this visit only, without saving them. If saving fails (for example, storage is full), picked files still play for this visit and the error is shown — the picker stays as the fallback.</span>
+</p>
+<p>
+<button class="big" onclick="pickFiles()">Pick songs (.mp3 / .m4a)</button>
+<button onclick="pickFolder()">Pick a folder</button>
+<input type="file" id="fileInput" accept=".mp3,.m4a,audio/mpeg,audio/mp4" multiple style="display:none">
+<input type="file" id="folderInput" accept=".mp3,.m4a,audio/mpeg,audio/mp4" multiple webkitdirectory style="display:none">
+</p>
+<div id="drop">Drop songs, a folder of songs, cover.jpg, or record.jpg here.<br><span class="small">Cover and record art are matched by folder: a cover.jpg / folder.jpg or record.jpg / disc.jpg in the same folder as a song is shown for that song.</span></div>
+<p id="addNote" class="small"></p>
+<div id="list"></div>
+<p class="small">How song names are shown: artist and album are taken from the folder path (for example, Artist / Album / song) or from an "Artist - Title" filename. Embedded tag art is not read by this page — if a song shows no art, add a cover.jpg in its folder and pick it again. No metadata is invented.</p>
+</div>
+
+<div id="yt" class="view">
+<h2>YouTube Music</h2>
+<div class="warn"><b>Stream only. Download: NOT WIRED YET.</b><br>
+Pasting a YouTube Music album address here does <b>not</b> save a local file. This page does not frame YouTube Music — YouTube blocks framing — so it opens YouTube Music in a new tab instead.</div>
+<p><a class="big" style="display:inline-block;background:#ff7a1a;color:#000;padding:14px 18px;font-size:19px;text-decoration:none" href="https://music.youtube.com" target="_blank" rel="noopener">Open music.youtube.com in a new tab</a></p>
+<p class="small">Sign-in, if YouTube asks for it, happens on YouTube's own page. Forge does not store a YouTube password, and this page has no account of its own.</p>
+</div>
+
+<div id="sync" class="view">
+<h2>Sync</h2>
+<div class="warn"><b>There is no auto-sync on this page.</b><br>
+No sync is ever reported as completed unless you actually picked the files. This page has no server, so it cannot push your saved songs to another device by itself.</div>
+<h3>How to get the same songs on another device, by hand</h3>
+<ol>
+<li>On the other device, open this same page in its browser.</li>
+<li>Pick the same song files there — from that device's own storage, a USB drive, an SD card, or a cloud drive you open yourself and download from. Picking them there saves them in <i>that</i> browser only.</li>
+<li>Use the same folder shape if you can (Artist / Album / song, with cover.jpg and record.jpg in the album folder), so the art matches the same way.</li>
+</ol>
+<p class="small">A future "same music anywhere" would need a cloud or server place to hold the files, plus an account to keep them private. That is <b>not</b> built here, by the locked choice for this page: browser saving, same device only.</p>
+<div id="syncSaved" class="small"></div>
+</div>
+
+<div id="junior" class="view">
+<h2>Junior-lite — browser-safe jobs only</h2>
+<p class="small">Junior-lite here is a checklist and a few browser tools. It cannot do Fire-only jobs in a browser.</p>
+<h3>1. Saved songs and health</h3>
+<button onclick="reloadSaved()">Reload saved songs</button>
+<button onclick="showHealth()">Health report</button>
+<div id="junHealth"></div>
+<h3>2. Backup (list only)</h3>
+<p class="small">Backup exports a JSON list of your saved songs (titles, artists, albums, sizes) — it does <b>not</b> export the audio files themselves. Keep the original song files to restore playback.</p>
+<button onclick="exportBackup()">Export library list (JSON download)</button>
+<h3>3. Cleanup guidance</h3>
+<p class="small">Keep songs in Artist / Album folders, with cover.jpg for album art and record.jpg for the round disc photo. Remove a saved song with its Remove button in the Local list, or clear everything below. Removing a saved song deletes only the browser's copy — it does not delete your original file.</p>
+<button onclick="clearSaved()">Remove ALL saved songs from this browser</button>
+<div id="junOut" class="small"></div>
+<h3>4. Fire-only jobs — not available in a browser</h3>
+<p class="small">Debloat / disabling Amazon apps, Bluetooth and speaker system settings, and Fire system settings are Fire-tablet jobs only. They are not claimed, and not attempted, on this web page.</p>
+</div>
+
+<script>
+var lib=[], pl='all', current=null;
+var audio=document.getElementById('player');
+var DBNAME='forge-player', DBVER=1, db=null;
+var counts={}, favs=[];
+try{ counts=JSON.parse(localStorage.getItem('forgeCounts')||'{}'); }catch(e){ counts={}; }
+try{ favs=JSON.parse(localStorage.getItem('forgeFavs')||'[]'); }catch(e){ favs=[]; }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+function show(id,btn){
+  var vs=document.getElementsByClassName('view');
+  for(var i=0;i<vs.length;i++) vs[i].className='view';
+  document.getElementById(id).className='view on';
+  var bs=document.getElementsByTagName('nav')[0].getElementsByTagName('button');
+  for(var j=0;j<bs.length;j++) bs[j].className='';
+  if(btn) btn.className='on';
+}
+function fmt(n){ if(n>=1073741824) return (n/1073741824).toFixed(2)+' GB'; if(n>=1048576) return (n/1048576).toFixed(1)+' MB'; if(n>=1024) return (n/1024).toFixed(0)+' KB'; return n+' B'; }
+function openDB(){
+  return new Promise(function(res,rej){
+    if(!window.indexedDB){ rej(new Error('IndexedDB is not available in this browser.')); return; }
+    var req=indexedDB.open(DBNAME,DBVER);
+    req.onupgradeneeded=function(){
+      var d=req.result;
+      if(!d.objectStoreNames.contains('songs')) d.createObjectStore('songs',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('images')) d.createObjectStore('images',{keyPath:'id'});
+    };
+    req.onsuccess=function(){ db=req.result; res(db); };
+    req.onerror=function(){ rej(req.error||new Error('Could not open IndexedDB.')); };
+  });
+}
+function dbTx(store,mode,fn){
+  return new Promise(function(res,rej){
+    var tx=db.transaction(store,mode), st=tx.objectStore(store), out;
+    try{ out=fn(st); }catch(e){ rej(e); return; }
+    tx.oncomplete=function(){ res(out); };
+    tx.onerror=function(){ rej(tx.error||new Error('IndexedDB transaction failed.')); };
+  });
+}
+function parseMeta(file, rel){
+  var path=rel||file.name;
+  var parts=path.split('/').filter(Boolean);
+  var base=parts[parts.length-1]||file.name;
+  var title=base.replace(/\.(mp3|m4a)$/i,'');
+  var artist='', album='', dir='';
+  if(parts.length>=3){ artist=parts[parts.length-3]; album=parts[parts.length-2]; dir=parts.slice(0,-1).join('/'); }
+  else if(parts.length===2){ album=parts[0]; dir=parts[0]; }
+  var m=title.match(/^(.+?)\s+-\s+(.+)$/);
+  if(m && !artist){ artist=m[1]; title=m[2]; }
+  return {title:title, artist:artist, album:album, dir:dir};
+}
+function makeId(file){ return file.name+'|'+file.size+'|'+(file.lastModified||0); }
+function addFiles(files){
+  var audios=[], images=[];
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    var low=f.name.toLowerCase();
+    if(/\.(mp3|m4a)$/.test(low)) audios.push(f);
+    else if(/\.(jpg|jpeg|png|webp)$/.test(low)) images.push(f);
+  }
+  var save=document.getElementById('saveBox').checked;
+  var note=document.getElementById('addNote');
+  var imageMap={};
+  function afterImages(){
+    var jobs=[];
+    for(var a=0;a<audios.length;a++){
+      (function(file){
+        var rel=file.webkitRelativePath||file._relPath||file.name;
+        var meta=parseMeta(file, rel);
+        var rec={id:makeId(file), title:meta.title, artist:meta.artist, album:meta.album, dir:meta.dir, size:file.size, addedAt:Date.now()};
+        jobs.push(new Promise(function(resolve){
+          if(!save){ rec.url=URL.createObjectURL(file); rec.blob=file; lib.push(rec); resolve('played'); return; }
+          openDB().then(function(){
+            return dbTx('songs','readwrite',function(st){ st.put({id:rec.id,title:rec.title,artist:rec.artist,album:rec.album,dir:rec.dir,size:rec.size,addedAt:rec.addedAt,blob:file}); });
+          }).then(function(){ resolve('saved'); }).catch(function(err){
+            rec.url=URL.createObjectURL(file); rec.blob=file; lib.push(rec); resolve('played-only:'+(err&&err.message?err.message:String(err)));
+          });
+        }));
+      })(audios[a]);
+    }
+    Promise.all(jobs).then(function(results){
+      var saved=0, playedOnly=0;
+      for(var k=0;k<results.length;k++){ if(results[k]==='saved') saved++; else playedOnly++; }
+      if(save && playedOnly>0) note.textContent='Storage save failed for '+playedOnly+' file(s) — they still play for this visit. Picker fallback is in use for those files.';
+      else if(save) note.textContent=saved+' song(s) saved in this browser.';
+      else note.textContent=audios.length+' song(s) playing for this visit only (not saved).';
+      return reloadSaved(true);
+    }).catch(function(err){ note.textContent='Could not add songs: '+(err&&err.message?err.message:String(err)); });
+  }
+  if(images.length===0){ afterImages(); return; }
+  if(!save){ for(var im=0;im<images.length;im++){ var rel2=images[im].webkitRelativePath||images[im]._relPath||images[im].name; var p2=rel2.split('/').slice(0,-1).join('/'); imageMap[p2+'/'+images[im].name.toLowerCase()]=URL.createObjectURL(images[im]); } window._memImages=imageMap; afterImages(); return; }
+  openDB().then(function(){
+    var puts=[];
+    for(var j=0;j<images.length;j++){
+      (function(img){
+        var rel=img.webkitRelativePath||img._relPath||img.name;
+        var key=rel.toLowerCase();
+        puts.push(dbTx('images','readwrite',function(st){ st.put({id:key,blob:img}); }));
+      })(images[j]);
+    }
+    return Promise.all(puts);
+  }).then(afterImages).catch(function(){ afterImages(); });
+}
+function reloadSaved(keepNote){
+  return openDB().then(function(){
+    return Promise.all([
+      dbTx('songs','readonly',function(st){ return st.getAll(); }),
+      dbTx('images','readonly',function(st){ return st.getAll(); })
+    ]);
+  }).then(function(all){
+    var songs=all[0]||[], imgs=all[1]||[];
+    var imgMap={};
+    for(var i=0;i<imgs.length;i++){ imgMap[imgs[i].id]=URL.createObjectURL(imgs[i].blob); }
+    window._savedImages=imgMap;
+    var mem=window._memImages||{};
+    var byId={};
+    for(var j=0;j<lib.length;j++){ if(!lib[j].saved){ byId[lib[j].id]=lib[j]; } }
+    lib=[];
+    for(var k=0;k<songs.length;k++){
+      var s=songs[k];
+      s.url=URL.createObjectURL(s.blob); s.saved=true; lib.push(s);
+    }
+    for(var key in byId){ lib.push(byId[key]); }
+    lib.sort(function(a,b){ return b.addedAt-a.addedAt; });
+    updateSavedBox(); render();
+    if(!keepNote) document.getElementById('addNote').textContent='Reloaded '+songs.length+' saved song(s) from this browser.';
+  }).catch(function(err){
+    updateSavedBox(); render();
+    document.getElementById('addNote').textContent='Saved songs could not be loaded: '+(err&&err.message?err.message:String(err))+' — you can still pick files to play for this visit.';
+  });
+}
+function savedStats(){
+  var n=0, bytes=0;
+  for(var i=0;i<lib.length;i++){ if(lib[i].saved){ n++; bytes+=lib[i].size||0; } }
+  return {n:n, bytes:bytes};
+}
+function updateSavedBox(){
+  var s=savedStats();
+  var txt='Saved in this browser: '+s.n+' song(s), '+fmt(s.bytes)+'. Saved in this browser only — not on other devices.';
+  document.getElementById('savedBox').textContent=txt;
+  document.getElementById('homeSaved').textContent=txt;
+  var el=document.getElementById('syncSaved'); if(el) el.textContent=txt;
+}
+function setPl(x){ pl=x; render(); }
+function filtered(){
+  var q=document.getElementById('q').value.toLowerCase();
+  var out=[];
+  for(var i=0;i<lib.length;i++){
+    var t=lib[i];
+    if(q && (t.title+' '+t.artist+' '+t.album).toLowerCase().indexOf(q)<0) continue;
+    if(pl==='fav' && favs.indexOf(t.id)<0) continue;
+    out.push(t);
+  }
+  if(pl==='recent') out.sort(function(a,b){ return b.addedAt-a.addedAt; });
+  if(pl==='played') out.sort(function(a,b){ return (counts[b.id]||0)-(counts[a.id]||0); });
+  return out;
+}
+function artFor(t){
+  var map=window._savedImages||{}, mem=window._memImages||{};
+  var dir=(t.dir||'').toLowerCase();
+  function find(names){
+    for(var i=0;i<names.length;i++){
+      var k=(dir?dir+'/':'')+names[i];
+      if(map[k]) return map[k];
+      if(mem[k]) return mem[k];
+    }
+    return '';
+  }
+  return {cover:find(['cover.jpg','cover.jpeg','cover.png','cover.webp','folder.jpg','folder.png']), disc:find(['record.jpg','record.jpeg','record.png','disc.jpg','disc.png'])};
+}
+function render(){
+  var list=filtered(); var html='';
+  for(var i=0;i<list.length;i++){
+    var t=list[i];
+    html+='<div class="song"><b>'+esc(t.title)+'</b><br><span class="small">'+esc(t.artist||'Unknown artist')+' — '+esc(t.album||'Unknown album')+' &middot; '+fmt(t.size||0)+(t.saved?' &middot; saved in this browser':' &middot; this visit only')+'</span><br>'
+    +'<button onclick="playIdx('+i+')">Play</button> <button onclick="favIdx('+i+')">&#9733;</button> <button onclick="removeIdx('+i+')">Remove</button></div>';
+  }
+  document.getElementById('list').innerHTML=html||'<p class="small">No tracks yet. Pick songs or a folder to start. Saved songs return automatically on this device and browser.</p>';
+  window._lastFiltered=list;
+  updateSavedBox();
+}
+function playIdx(i){ playSong(window._lastFiltered[i]); }
+function favIdx(i){ var t=window._lastFiltered[i]; var ix=favs.indexOf(t.id); if(ix<0) favs.push(t.id); else favs.splice(ix,1); try{ localStorage.setItem('forgeFavs',JSON.stringify(favs)); }catch(e){} render(); }
+function playSong(t){
+  current=t;
+  audio.src=t.url;
+  audio.play().catch(function(){ document.getElementById('npState').textContent='Playback was blocked — tap Play again.'; });
+  document.getElementById('npTitle').innerHTML='<b>'+esc(t.title)+'</b>';
+  document.getElementById('npMeta').textContent=(t.artist||'Unknown artist')+' — '+(t.album||'Unknown album');
+  document.getElementById('npState').textContent='Playing';
+  var art=artFor(t);
+  var cov=document.getElementById('cover'); cov.src=art.cover||''; cov.style.display=art.cover?'block':'none';
+  var disc=document.getElementById('disc'); disc.src=art.disc||''; disc.style.display=art.disc?'block':'none';
+  counts[t.id]=(counts[t.id]||0)+1;
+  try{ localStorage.setItem('forgeCounts',JSON.stringify(counts)); }catch(e){}
+  render();
+}
+function togglePlay(){ if(!current) return; if(audio.paused) audio.play(); else audio.pause(); }
+function stopSong(){ audio.pause(); audio.currentTime=0; document.getElementById('npState').textContent='Stopped'; }
+function favCurrent(){ if(current){ var ix=favs.indexOf(current.id); if(ix<0) favs.push(current.id); else favs.splice(ix,1); try{ localStorage.setItem('forgeFavs',JSON.stringify(favs)); }catch(e){} render(); } }
+function removeIdx(i){
+  var t=window._lastFiltered[i];
+  if(!t) return;
+  if(t.saved){
+    openDB().then(function(){ return dbTx('songs','readwrite',function(st){ st.delete(t.id); }); }).then(function(){
+      if(current&&current.id===t.id){ stopSong(); current=null; }
+      return reloadSaved(true);
+    }).catch(function(err){ document.getElementById('addNote').textContent='Could not remove saved song: '+(err&&err.message?err.message:String(err)); });
+  } else {
+    lib=lib.filter(function(x){ return x.id!==t.id; });
+    if(current&&current.id===t.id){ stopSong(); current=null; }
+    render();
+  }
+}
+function clearSaved(){
+  if(!confirm('Remove ALL saved songs from this browser? Your original files are not touched.')) return;
+  openDB().then(function(){
+    return Promise.all([dbTx('songs','readwrite',function(st){ st.clear(); }), dbTx('images','readwrite',function(st){ st.clear(); })]);
+  }).then(function(){ stopSong(); current=null; return reloadSaved(true); }).then(function(){ document.getElementById('junOut').textContent='All saved songs removed from this browser.'; }).catch(function(err){ document.getElementById('junOut').textContent='Clear failed: '+(err&&err.message?err.message:String(err)); });
+}
+function showHealth(){
+  var s=savedStats();
+  var html='<div class="ok">Saved songs in this browser: '+s.n+'<br>Saved size: '+fmt(s.bytes)+'<br>Tracks loaded now: '+lib.length+'<br>Favorites: '+favs.length+'<br>Note: this is this browser, on this device, only. It says nothing about any other device.</div>';
+  document.getElementById('junHealth').innerHTML=html;
+  if(navigator.storage&&navigator.storage.estimate){
+    navigator.storage.estimate().then(function(e){
+      var q=e.quota?('Browser storage estimate: '+fmt(e.usage||0)+' used of about '+fmt(e.quota)+' allowed (estimate only, browsers may prompt before allowing more).'):'';
+      if(q) document.getElementById('junHealth').innerHTML+='<p class="small">'+q+'</p>';
+    }).catch(function(){});
+  }
+}
+function exportBackup(){
+  var s=savedStats();
+  var data={exportedAt:new Date().toISOString(), note:'Library list only — audio files are NOT included. Keep your original song files.', savedSongs:s.n, savedBytes:s.bytes, songs:lib.filter(function(t){ return t.saved; }).map(function(t){ return {id:t.id,title:t.title,artist:t.artist,album:t.album,dir:t.dir,size:t.size,addedAt:t.addedAt,plays:counts[t.id]||0,favorite:favs.indexOf(t.id)>=0}; })};
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='forge-music-library.json'; a.click();
+}
+function pickFiles(){ document.getElementById('fileInput').click(); }
+function pickFolder(){
+  if(window.showDirectoryPicker){
+    window.showDirectoryPicker().then(function(handle){ return collectDir(handle,''); }).then(function(files){ addFiles(files); }).catch(function(err){ if(err&&err.name!=='AbortError') pickFolderFallback(); });
+  } else { pickFolderFallback(); }
+}
+function pickFolderFallback(){ document.getElementById('folderInput').click(); }
+async function collectDir(handle, prefix){
+  var out=[];
+  async function walk(h, p){
+    if(h.kind==='file'){ var f=await h.getFile(); f._relPath=p+'/'+f.name; out.push(f); return; }
+    if(h.kind==='directory'){
+      for await (var child of h.values()){ await walk(child, p+'/'+h.name); }
+    }
+  }
+  await walk(handle, prefix);
+  for(var i=0;i<out.length;i++){ try{ Object.defineProperty(out[i],'webkitRelativePath',{value:out[i]._relPath.replace(/^\//,'')}); }catch(e){} }
+  return out;
+}
+document.getElementById('fileInput').addEventListener('change', function(){ addFiles(this.files); this.value=''; });
+document.getElementById('folderInput').addEventListener('change', function(){ addFiles(this.files); this.value=''; });
+var drop=document.getElementById('drop');
+drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.className='over'; });
+drop.addEventListener('dragleave', function(){ drop.className=''; });
+drop.addEventListener('drop', function(e){
+  e.preventDefault(); drop.className='';
+  if(e.dataTransfer.files&&e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+});
+audio.addEventListener('ended', function(){ document.getElementById('npState').textContent='Finished'; });
+audio.addEventListener('pause', function(){ if(document.getElementById('npState').textContent==='Playing') document.getElementById('npState').textContent='Paused'; });
+audio.addEventListener('play', function(){ document.getElementById('npState').textContent='Playing'; });
+reloadSaved(true);
+</script></body></html>
