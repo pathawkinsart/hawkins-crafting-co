@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:,">
+<title>Forge Browser — Music on Any Device</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eceae6; --panel:#ffffff; --panel2:#f4f2ee; --ink:#1a1a1c; --muted:#6b6b70; --line:#ddd9d2;
+  --charcoal:#232326; --charcoal2:#2e2e32; --ember:#e85d12; --ember2:#ff7a2e; --emberSoft:#fff1e8;
+  --green:#1a7f4b; --greenBg:#e6f4ec; --amber:#8a5a00; --amberBg:#fdf0d0; --red:#b42318; --redBg:#fdecea;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#141416; --panel:#1f1f22; --panel2:#26262a; --ink:#f2f1ed; --muted:#a3a3ab; --line:#343439; --emberSoft:#3a2317; --greenBg:#163626; --amberBg:#3d2f0a; --redBg:#3d1a17; }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Archivo',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--ember)}
+button,input{font:inherit}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+/* ---------- Browser chrome ---------- */
+.chrome{background:var(--charcoal);color:#f5f4f1;padding:10px 12px 12px;position:sticky;top:0;z-index:20;box-shadow:0 6px 24px rgba(0,0,0,.28)}
+.chrome-top{display:flex;align-items:center;gap:10px;max-width:1180px;margin:0 auto}
+.flame{width:34px;height:34px;border-radius:9px;background:var(--ember);display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:19px}
+.brand{line-height:1.05;min-width:0}
+.brand b{font-size:17px;letter-spacing:-.02em;display:block;white-space:nowrap}
+.brand span{font-size:11px;color:#b9b9be;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jsok{margin-left:auto;flex:0 0 auto;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 9px;border-radius:999px;border:1px solid #4a4a50;background:#2b2b2f;color:#f0c36d}
+.jsok.ok{color:#7ee2a8;border-color:#2f5c40;background:#1e2f24}
+.navrow{display:flex;gap:6px;max-width:1180px;margin:10px auto 0;align-items:center}
+.navbtn{width:38px;height:38px;border-radius:9px;border:1px solid #45454b;background:var(--charcoal2);color:#eee;cursor:pointer;font-size:16px;flex:0 0 auto}
+.navbtn:active{transform:scale(.96)}
+.addr{flex:1;display:flex;background:#fff;border-radius:10px;overflow:hidden;min-width:0}
+.addr input{flex:1;border:0;outline:0;padding:11px 12px;font-size:15px;color:#161617;min-width:0}
+.addr button{border:0;background:var(--ember);color:#fff;font-weight:700;padding:0 18px;cursor:pointer}
+.addr button:hover{background:var(--ember2)}
+.quick{display:flex;gap:6px;flex-wrap:wrap;max-width:1180px;margin:9px auto 0}
+.quick button{border:1px solid #45454b;background:transparent;color:#d8d8dc;border-radius:999px;padding:6px 11px;font-size:12.5px;cursor:pointer}
+.quick button:hover{border-color:var(--ember2);color:#fff}
+/* ---------- Layout ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:16px 14px 40px}
+.viewportCard{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
+.viewportHead{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--panel2);border-bottom:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%}
+.viewportHead .url{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);font-weight:600}
+#frameWrap{position:relative;background:#fff}
+iframe#view{width:100%;height:340px;border:0;display:block;background:#fff}
+.frameMsg{padding:14px 16px;font-size:14px;border-top:1px solid var(--line);display:none}
+.frameMsg.show{display:block}
+.frameMsg.warn{background:var(--amberBg);color:var(--ink)}
+.grid{display:grid;grid-template-columns:1.25fr .85fr;gap:16px;align-items:start}
+.grid>*{min-width:0}
+body{overflow-x:hidden}
+@media(max-width:860px){.grid{grid-template-columns:1fr} iframe#view{height:280px} .brand span{display:none}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px;overflow:hidden;max-width:100%}
+.card h2{margin:0 0 4px;font-size:20px;letter-spacing:-.02em}
+.card h3{margin:18px 0 8px;font-size:15px}
+.card p.lede{margin:0 0 14px;color:var(--muted);font-size:14.5px}
+.kicker{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ember);font-weight:600;margin-bottom:6px}
+/* Player */
+.now{display:flex;gap:14px;align-items:center;background:var(--charcoal);color:#fff;border-radius:12px;padding:14px}
+.now img{width:64px;height:64px;border-radius:10px;object-fit:cover;background:#3a3a3f;flex:0 0 auto}
+.now .t{min-width:0;flex:1 1 auto;overflow:hidden}
+.now .t b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now .t span{display:block;color:#bdbdc2;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now .live{margin-left:auto;flex:0 0 auto;font-family:'IBM Plex Mono',monospace;font-size:11px;background:#3a2317;color:#ffb287;border:1px solid #6b3a1e;padding:5px 8px;border-radius:999px}
+audio{width:100%;max-width:100%;margin-top:12px;height:44px}
+.transport{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.transport button{flex:1;min-width:86px;padding:11px 8px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-weight:700;cursor:pointer}
+.transport button.primary{background:var(--ember);border-color:var(--ember);color:#fff}
+.stations{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+@media(max-width:480px){.stations{grid-template-columns:1fr} table{font-size:12.5px} .now{flex-wrap:wrap} .now .live{margin-left:0} .card{padding:14px} .transport button{min-width:70px}}
+.station{text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:11px;padding:11px 12px;cursor:pointer;color:var(--ink)}
+.station:hover{border-color:var(--ember)}
+.station b{display:block;font-size:14.5px}
+.station span{font-size:12.5px;color:var(--muted);display:block}
+.station.playing{border-color:var(--ember);background:var(--emberSoft)}
+.searchRow{display:flex;gap:8px}
+.searchRow input{flex:1;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);min-width:0}
+.searchRow button{background:var(--charcoal);color:#fff;border:0;border-radius:10px;padding:0 16px;font-weight:700;cursor:pointer}
+@media (prefers-color-scheme: dark){.searchRow button{background:var(--ember)}}
+.results{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.result{display:flex;gap:11px;align-items:center;border:1px solid var(--line);border-radius:11px;padding:9px;cursor:pointer;background:var(--panel);text-align:left;width:100%;color:var(--ink)}
+.result img{width:48px;height:48px;border-radius:8px;object-fit:cover;flex:0 0 auto;background:var(--panel2)}
+.result .rt{min-width:0;flex:1}.result .rt b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14.5px}
+.result .rt span{font-size:12.5px;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.result .dur{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ember);border:1px solid var(--line);padding:4px 7px;border-radius:999px;flex:0 0 auto}
+.status{font-size:13px;color:var(--muted);margin-top:8px;min-height:18px}
+.pasteRow{display:flex;gap:8px;margin-top:6px}
+.pasteRow input{flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);min-width:0;font-size:13.5px}
+.pasteRow button{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:10px;padding:0 14px;font-weight:700;cursor:pointer}
+/* tables / lists */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;padding:8px 8px 8px 0;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--line)}
+td{padding:9px 8px 9px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td:last-child,th:last-child{padding-right:0}
+.pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.pill.yes{background:var(--greenBg);color:var(--green)} .pill.no{background:var(--redBg);color:var(--red)} .pill.part{background:var(--amberBg);color:var(--amber)}
+ul.checks{list-style:none;margin:0;padding:0}
+ul.checks li{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;display:flex;gap:10px}
+ul.checks li:last-child{border-bottom:0}
+.num{width:24px;height:24px;border-radius:50%;background:var(--charcoal);color:#fff;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto;margin-top:1px}
+.svc{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.svc:last-child{border-bottom:0}
+.svc .ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;flex:0 0 auto;font-size:15px}
+.svc b{font-size:14.5px}.svc p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.svc a{font-size:13px;font-weight:700;white-space:nowrap;margin-left:auto;flex:0 0 auto;padding-top:2px}
+.note{background:var(--emberSoft);border-radius:11px;padding:13px 14px;font-size:13.5px}
+.note b{color:var(--ember)}
+footer{max-width:1180px;margin:0 auto;padding:0 14px 34px;color:var(--muted);font-size:12.5px}
+footer a{word-break:break-all}
+.arch{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--charcoal);color:#d9f2c2;border-radius:11px;padding:14px;white-space:pre-wrap;word-break:break-word;line-height:1.65;max-width:100%}
+</style>
+</head>
+<body>
+
+<header class="chrome">
+  <div class="chrome-top">
+    <div class="flame" aria-hidden="true">🔥</div>
+    <div class="brand"><b>Forge Browser</b><span>Built to run where other browsers gave up — music first</span></div>
+    <div class="jsok" id="jsok">JS: checking…</div>
+  </div>
+  <form class="navrow" id="addrForm">
+    <button type="button" class="navbtn" id="btnBack" title="Back" aria-label="Back">‹</button>
+    <button type="button" class="navbtn" id="btnFwd" title="Forward" aria-label="Forward">›</button>
+    <button type="button" class="navbtn" id="btnHome" title="Start page" aria-label="Home">⌂</button>
+    <div class="addr">
+      <input id="addrInput" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type a web address — or tap a station below and just listen" value="forge://start" aria-label="Address bar">
+      <button type="submit">Go</button>
+    </div>
+  </form>
+  <div class="quick" aria-label="Quick launch">
+    <button data-go="https://en.wikipedia.org/wiki/Music">Wikipedia — try browsing</button>
+    <button data-go="https://www.bbc.com/news">BBC News (simplified test)</button>
+    <button data-service="spotify">Spotify</button>
+    <button data-service="apple">Apple Music</button>
+    <button data-service="pandora">Pandora</button>
+    <button data-service="youtube">YouTube Music</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Viewport -->
+  <section class="viewportCard" aria-label="Browser viewport">
+    <div class="viewportHead">
+      <span class="dot" style="background:#e85d12"></span><span class="dot" style="background:#c9c9ce"></span><span class="dot" style="background:#8e8e93"></span>
+      <span class="url mono" id="viewUrl">forge://start</span>
+      <span style="margin-left:auto" id="viewState">Start page</span>
+    </div>
+    <div id="frameWrap"><iframe id="view" title="Web page viewport" sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>
+    <div class="frameMsg warn" id="frameMsg" role="status"></div>
+  </section>
+
+  <div class="grid">
+    <!-- LEFT: music -->
+    <div>
+      <section class="card" aria-label="Music player">
+        <div class="kicker">Now playing — plain audio, no tricks</div>
+        <div class="now">
+          <img id="npArt" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%233a3a3f'/%3E%3Ccircle cx='32' cy='32' r='13' fill='%23e85d12'/%3E%3C/svg%3E">
+          <div class="t"><b id="npTitle">Nothing playing yet</b><span id="npSub">Tap any station or search result — audio starts from your tap, the way old iPads require.</span></div>
+          <span class="live" id="npBadge">READY</span>
+        </div>
+        <audio id="player" controls preload="none"></audio>
+        <div class="transport">
+          <button id="btnPrev">⏮ Prev</button>
+          <button id="btnPlay" class="primary">▶ Play</button>
+          <button id="btnNext">Next ⏭</button>
+        </div>
+        <p class="status" id="playStatus">Forge plays only what an old tablet can already decode: a direct MP3 or AAC stream in a plain &lt;audio&gt; tag. No MSE, no DRM module, no app install.</p>
+
+        <h3>Live radio — full stations, DRM-free</h3>
+        <p class="lede" style="margin-bottom:8px">Real stations streaming plain MP3 right now. These play in full — not previews — because they were never locked behind DRM.</p>
+        <div class="stations" id="stations"></div>
+
+        <h3>Search any song — 30-second previews</h3>
+        <p class="lede" style="margin-bottom:8px">Search runs against Apple's public iTunes catalogue and plays the same kind of plain-MP3 preview Spotify's API returns. Full songs from Spotify / Apple Music / Pandora need their own DRM player — see the honest panel on the right.</p>
+        <form class="searchRow" id="searchForm">
+          <input id="searchInput" type="search" placeholder="Try: Johnny Cash, Fleetwood Mac, Daft Punk…" aria-label="Search songs">
+          <button type="submit">Search</button>
+        </form>
+        <div class="results" id="results"></div>
+        <p class="status" id="searchStatus">Tip: previews vary by label and region — some tracks return no preview at all. When that happens Forge says so instead of spinning forever.</p>
+
+        <h3>Play your own file or stream</h3>
+        <p class="lede" style="margin-bottom:8px">Paste any direct MP3 / AAC / podcast URL and Forge plays it as-is.</p>
+        <div class="pasteRow">
+          <input id="pasteInput" type="url" placeholder="https://…/song.mp3" aria-label="Paste an MP3 or AAC URL">
+          <button id="btnPaste" type="button">Play URL</button>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Prove it test">
+        <div class="kicker">The v1 proof test</div>
+        <h2>Five checks on your oldest tablet</h2>
+        <p class="lede">This is the pass/fail test from the Forge Browser research. Run it on the actual frozen device — an iPad stuck on iOS 9 counts. Steps 1–4 must pass; step 5 must fail <em>gracefully</em>, with a clear message instead of a blank player.</p>
+        <ul class="checks">
+          <li><span class="num">1</span><span><b>Cold load.</b> Open this page on home Wi-Fi. The address bar and search box render, and the pill at the top flips to “JS OK”.</span></li>
+          <li><span class="num">2</span><span><b>Search.</b> Type an artist and submit. Results appear with covers and preview buttons.</span></li>
+          <li><span class="num">3</span><span><b>Play.</b> Tap a result. Audio starts within about 5 seconds, plays to the end of the 30-second preview, and pause / next / previous all respond to taps.</span></li>
+          <li><span class="num">4</span><span><b>Browse.</b> Type a plain article URL in the address bar. It renders in the viewport above — or Forge tells you plainly if the site refuses to be framed.</span></li>
+          <li><span class="num">5</span><span><b>Honest failure.</b> Tap Spotify, Apple Music or Pandora above. Forge shows the “previews only” notice up front — never a silent, dead player pretending it will work.</span></li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- RIGHT: services + truth -->
+    <div>
+      <section class="card" aria-label="Music services">
+        <div class="kicker">Your services, straight answers</div>
+        <h2>What works here — and what can't</h2>
+        <p class="lede">Forge is one web page running inside your tablet's existing browser engine. On iPads that engine is WebKit for <em>every</em> browser — so no page can install a new DRM module or media engine. Here's each service against that wall:</p>
+
+        <div class="svc"><div class="ic" style="background:#1db954">S</div><div><b>Spotify</b> <span class="pill part">Previews only</span><p>Forge plays Spotify-style 30s MP3 previews. Full playback needs Premium + Widevine DRM via the Web Playback SDK — Widevine doesn't exist on any iOS surface. Web player now requires Chrome 87+ / Safari 15+.</p></div><a href="https://open.spotify.com" target="_blank" rel="noopener">Open ↗</a></div>
+
+        <div class="svc"><div class="ic" style="background:#1a1a1c">♪</div><div><b>Apple Music</b> <span class="pill part">Previews only</span><p>Search above <em>is</em> Apple's catalogue — previews use the plain format old iPads already decode — designed for yours, pending the five checks below (no physical old-tablet test has been run yet). Apple Music itself already plays directly on the old iPad. Full songs need a subscription sign-in plus FairPlay DRM in a modern Safari.</p></div><a href="https://music.apple.com" target="_blank" rel="noopener">Open ↗</a></div>
+
+        <div class="svc"><div class="ic" style="background:#224099">P</div><div><b>Pandora</b> <span class="pill no">Not in v1</span><p>Pandora dropped Flash and now runs a modern HTML5 player with no public plain-audio API — there's nothing for Forge to legitimately play from it in v1. The radio stations on the left are the working substitute.</p></div><a href="https://www.pandora.com" target="_blank" rel="noopener">Open ↗</a></div>
+
+        <div class="svc"><div class="ic" style="background:#c00">▶</div><div><b>YouTube Music</b> <span class="pill no">Not in v1</span><p>Streams through adaptive MSE playback that old Safari never had (iPhone only gained MSE in Safari 17.1, Oct 2023). No plain-audio path exists for Forge to use.</p></div><a href="https://music.youtube.com" target="_blank" rel="noopener">Open ↗</a></div>
+
+        <div class="svc"><div class="ic" style="background:var(--ember)">♫</div><div><b>Internet radio &amp; podcasts</b> <span class="pill yes">Plays in full</span><p>DRM-free MP3/AAC streams are the one format old Safari has played since the beginning. Full stations, full episodes — this is Forge's home turf.</p></div></div>
+
+        <div class="note" style="margin-top:14px"><b>Why not just log in through Forge?</b> A proxy login would have to hold your password, MFA code and session cookie — a breach there is a breach of your whole music account, and OAuth sign-ins break when they arrive from the wrong domain. V1 refuses that design on purpose.</div>
+      </section>
+
+      <section class="card" aria-label="Device check">
+        <div class="kicker">This device, right now</div>
+        <h2>Capability check</h2>
+        <p class="lede">Detected live in <em>this</em> browser — the same checks that decide what any music service can do here.</p>
+        <table>
+          <thead><tr><th>Capability</th><th>Here</th><th>Why it matters</th></tr></thead>
+          <tbody id="capBody"></tbody>
+        </table>
+        <p class="status">Code can fix syntax (Babel → ES5) and missing JS built-ins (polyfills). It cannot polyfill a DRM module, MSE, a codec, or TLS — those are native parts of the browser itself.</p>
+      </section>
+
+      <section class="card" aria-label="How the pros did it">
+        <div class="kicker">Proven precedents</div>
+        <h2>Moving the work off the device</h2>
+        <table>
+          <thead><tr><th>Approach</th><th>Verdict for Forge</th></tr></thead>
+          <tbody>
+            <tr><td><b>Lightweight API client + plain &lt;audio&gt;</b><br><span style="color:var(--muted)">Forge's own simple shell; server returns MP3/AAC.</span></td><td><span class="pill yes">Built — this page</span></td></tr>
+            <tr><td><b>Simplifying proxy</b><br><span style="color:var(--muted)">Server fetches with modern TLS, strips heavy JS/CSS, returns plain HTML. Fixes reading, not players.</span></td><td><span class="pill part">Helper — next step</span></td></tr>
+            <tr><td><b>Opera Mini model</b><br><span style="color:var(--muted)">Server renders, device gets a snapshot (~90% less data) — but scripts stop after ~2s and there's no live animation. Fatal for a player.</span></td><td><span class="pill no">Reading only</span></td></tr>
+            <tr><td><b>Puffin cloud browser</b><br><span style="color:var(--muted)">~95% of work runs on the server's Chromium. Works — but only as a native thin-client app with a paid always-on server. Not code-only.</span></td><td><span class="pill part">Future, separate app</span></td></tr>
+            <tr><td><b>Strip DRM / re-encode streams</b><br><span style="color:var(--muted)">Defeats a protection measure and its licence. Not a transpiling trick.</span></td><td><span class="pill no">Never — needs rights-holders' permission</span></td></tr>
+          </tbody>
+        </table>
+        <h3>How v1 is wired</h3>
+        <div class="arch">Old tablet (frozen WebKit, ES5 only)
+ └─ Forge shell: 1 static page
+     ├─ Address bar → simplified page view
+     ├─ Search → catalogue API → title / cover
+     │            + preview_url (plain MP3)
+     └─ &lt;audio src=preview&gt; plays directly
+        No MSE · No EME · No login proxy</div>
+        <p class="status">Next gates, in order: ① a small always-on helper (~$5–7/mo class) so first search doesn't cold-start; ② sanctioned embeds where they help; ③ a separate native cloud-browser app for full catalogues — explicitly not code-only, with its own cost and legal review.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p><b>Sources (research, 2026-11-01 — index-based; no live test on a physical old tablet was run, and Pandora's details rest on community summaries, so treat those as lower confidence):</b>
+  Spotify web player requirements &amp; DRM — <a href="https://support.spotify.com/np-en/article/web-player-help/">support.spotify.com</a> · Web Playback SDK — <a href="https://developer.spotify.com/documentation/web-playback-sdk/howtos/web-app-player">developer.spotify.com</a> · Puffin split-browser white paper — <a href="https://www.puffin.com/white-papers/Puffin-Secure-Browser-Technical-White-Paper-Part-1.pdf">puffin.com</a> · Opera Mini — <a href="https://en.wikipedia.org/wiki/Opera_Mini">en.wikipedia.org</a> · iOS browsers are WebKit — <a href="https://browserinsight.net/blog/ios-browsers-all-webkit">browserinsight.net</a> · Plain MP3/AAC in old Safari — <a href="https://www.w3docs.com/learn-html/audio-and-video-in-html5">w3docs.com</a> · Proxy-login risk — <a href="https://www.huntress.com/cybersecurity-101/topic/session-hijacking">huntress.com</a>. Song search &amp; previews via the public iTunes Search API; radio streams via SomaFM's public MP3 feeds.</p>
+  <p>Forge Browser v1 — a Hawkins Crafting Co. experiment. It plays music on devices the big browsers left behind by asking the old hardware to do <em>less</em>, not more.</p>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  /* ---------- JS OK indicator (test step 1) ---------- */
+  var jsok = document.getElementById('jsok');
+  jsok.textContent = '● JS OK'; jsok.className = 'jsok ok';
+
+  var player = document.getElementById('player');
+  var npTitle = document.getElementById('npTitle'), npSub = document.getElementById('npSub'),
+      npArt = document.getElementById('npArt'), npBadge = document.getElementById('npBadge'),
+      playStatus = document.getElementById('playStatus');
+
+  /* ---------- Playlist (stations + search results share Prev/Next) ---------- */
+  var playlist = [], current = -1;
+
+  var STATIONS = [
+    {title:'Groove Salad', sub:'SomaFM · ambient beats', src:'https://ice1.somafm.com/groovesalad-128-mp3'},
+    {title:'Lush', sub:'SomaFM · mellow vocals', src:'https://ice1.somafm.com/lush-128-mp3'},
+    {title:'Drone Zone', sub:'SomaFM · deep ambient', src:'https://ice1.somafm.com/dronezone-128-mp3'},
+    {title:'Left Coast 70s', sub:'SomaFM · mellow rock', src:'https://ice1.somafm.com/seventies-128-mp3'},
+    {title:'Boot Liquor', sub:'SomaFM · americana / country', src:'https://ice1.somafm.com/bootliquor-128-mp3'},
+    {title:'Secret Agent', sub:'SomaFM · spy lounge', src:'https://ice1.somafm.com/secretagent-128-mp3'}
+  ];
+
+  function setNow(item){
+    npTitle.textContent = item.title;
+    npSub.textContent = item.sub || '';
+    if(item.art){ npArt.src = item.art; }
+    npBadge.textContent = item.live ? 'LIVE RADIO' : 'PREVIEW · 0:30';
+  }
+  function markStations(){
+    var nodes = document.getElementById('stations').children;
+    for(var i=0;i<nodes.length;i++){ nodes[i].className = 'station' + (playlist[current] && playlist[current].stationIdx === i ? ' playing' : ''); }
+  }
+  function playIndex(i){
+    if(i < 0 || i >= playlist.length) return;
+    current = i;
+    var item = playlist[i];
+    player.src = item.src;
+    setNow(item); markStations();
+    var p = player.play();
+    if(p && p.catch){ p.catch(function(){ playStatus.textContent = 'Tap ▶ Play — this device needs a fresh tap before audio starts. That is an iOS rule, not a Forge bug.'; }); }
+    playStatus.textContent = 'Playing: ' + item.title + (item.live ? ' — live stream, plays in full.' : ' — 30-second preview, the full song lives behind the service\u2019s DRM player.');
+  }
+  player.addEventListener('ended', function(){ if(current >= 0 && current < playlist.length - 1) playIndex(current + 1); });
+
+  /* Render stations */
+  var stWrap = document.getElementById('stations');
+  STATIONS.forEach(function(s, idx){
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'station';
+    b.innerHTML = '<b></b><span></span>';
+    b.querySelector('b').textContent = s.title;
+    b.querySelector('span').textContent = s.sub + ' — tap to play';
+    b.addEventListener('click', function(){
+      playlist = STATIONS.map(function(x, j){ return {title:x.title, sub:x.sub, src:x.src, live:true, stationIdx:j}; });
+      playIndex(idx);
+    });
+    stWrap.appendChild(b);
+  });
+
+  document.getElementById('btnPlay').addEventListener('click', function(){
+    if(current < 0){ playlist = STATIONS.map(function(x, j){ return {title:x.title, sub:x.sub, src:x.src, live:true, stationIdx:j}; }); playIndex(0); return; }
+    if(player.paused){ player.play(); this.textContent = '⏸ Pause'; } else { player.pause(); this.textContent = '▶ Play'; }
+  });
+  player.addEventListener('play', function(){ document.getElementById('btnPlay').textContent = '⏸ Pause'; });
+  player.addEventListener('pause', function(){ document.getElementById('btnPlay').textContent = '▶ Play'; });
+  document.getElementById('btnNext').addEventListener('click', function(){ if(playlist.length) playIndex((current + 1) % playlist.length); });
+  document.getElementById('btnPrev').addEventListener('click', function(){ if(playlist.length) playIndex((current - 1 + playlist.length) % playlist.length); });
+
+  /* ---------- Paste your own URL ---------- */
+  document.getElementById('btnPaste').addEventListener('click', function(){
+    var u = document.getElementById('pasteInput').value.replace(/^\s+|\s+$/g, '');
+    if(!u){ playStatus.textContent = 'Paste a direct MP3 or AAC link first.'; return; }
+    playlist = [{title:'Your link', sub:u, src:u, live:false}];
+    npBadge.textContent = 'YOUR URL';
+    playIndex(0);
+  });
+
+  /* ---------- Music search via iTunes Search API (JSONP — works on ES5 engines) ---------- */
+  var cbCounter = 0;
+  document.getElementById('searchForm').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var q = document.getElementById('searchInput').value.replace(/^\s+|\s+$/g, '');
+    var status = document.getElementById('searchStatus'), box = document.getElementById('results');
+    if(!q){ status.textContent = 'Type an artist or song name first.'; return; }
+    status.textContent = 'Searching Apple\u2019s catalogue… first hit after idle can take a few seconds.';
+    box.innerHTML = '';
+    var cb = 'forgeCb' + (++cbCounter);
+    window[cb] = function(data){
+      delete window[cb];
+      var tracks = (data && data.results) || [];
+      var withPreview = [];
+      tracks.forEach(function(t){ if(t.previewUrl) withPreview.push(t); });
+      if(!tracks.length){ status.textContent = 'No matches for \u201C' + q + '\u201D. Try another spelling.'; return; }
+      if(!withPreview.length){ status.textContent = tracks.length + ' matches, but none returned a playable preview — labels withhold some previews by region. The radio stations above always play.'; return; }
+      playlist = withPreview.map(function(t){ return {title:t.trackName, sub:t.artistName + (t.collectionName ? ' · ' + t.collectionName : ''), src:t.previewUrl, art:t.artworkUrl100, live:false}; });
+      status.textContent = withPreview.length + ' playable previews — tap one to listen. Full songs need the service\u2019s own app; these previews are the honest v1 path.';
+      withPreview.forEach(function(t, i){
+        var r = document.createElement('button');
+        r.type = 'button'; r.className = 'result';
+        r.innerHTML = '<img alt=""><div class="rt"><b></b><span></span></div><span class="dur">0:30 ▶</span>';
+        r.querySelector('img').src = t.artworkUrl100 || '';
+        r.querySelector('b').textContent = t.trackName;
+        r.querySelector('span').textContent = t.artistName + (t.collectionName ? ' · ' + t.collectionName : '');
+        r.addEventListener('click', function(){ playIndex(i); });
+        box.appendChild(r);
+      });
+    };
+    var s = document.createElement('script');
+    s.onerror = function(){ status.textContent = 'Search could not reach the catalogue from this device/network. The live radio stations above need no search and still play.'; };
+    s.src = 'https://itunes.apple.com/search?term=' + encodeURIComponent(q) + '&media=music&entity=song&limit=12&callback=' + cb;
+    document.body.appendChild(s);
+  });
+
+  /* ---------- Address bar + viewport ---------- */
+  var frame = document.getElementById('view'), viewUrl = document.getElementById('viewUrl'),
+      viewState = document.getElementById('viewState'), frameMsg = document.getElementById('frameMsg'),
+      addrInput = document.getElementById('addrInput'), startHTML = null;
+
+  var SERVICE_NOTES = {
+    spotify: 'Loading Spotify in the Forge window above. Honest odds: its full player needs Widevine DRM and a modern browser (Safari 15+), and Spotify refuses framing on most pages — if the pane stays blank, that\u2019s the refusal, not a hang. What Forge guarantees instead: 30-second previews and full DRM-free radio, below.',
+    apple: 'Loading Apple Music in the Forge window above. Its full web player needs a subscription sign-in plus FairPlay DRM in a modern Safari, so expect a refusal or a sign-in wall here — Forge\u2019s guaranteed path is Apple catalogue previews (search below). On the old iPad, Apple Music also plays directly without Forge.',
+    pandora: 'Loading Pandora in the Forge window above — this is the window you asked for. Honest odds: Pandora has no public plain-audio API, its HTML5 player needs a modern engine, and it may refuse to render inside another page. If it stays blank, nothing is broken on your end — the live radio below is the working substitute.',
+    youtube: 'Loading YouTube Music in the Forge window above. It streams via MSE adaptive playback, which old Safari never had, so expect it not to play here — previews and radio below are Forge\u2019s working path.'
+  };
+  var SERVICE_URLS = { spotify:'https://open.spotify.com', apple:'https://music.apple.com', pandora:'https://www.pandora.com', youtube:'https://music.youtube.com' };
+
+  function showMsg(text){ frameMsg.textContent = text; frameMsg.className = 'frameMsg warn show'; }
+  function hideMsg(){ frameMsg.className = 'frameMsg'; frameMsg.textContent = ''; }
+
+  function loadUrl(raw){
+    var u = (raw || '').replace(/^\s+|\s+$/g, '');
+    if(!u || u === 'forge://start'){ goHome(); return; }
+    if(!/^https?:\/\//i.test(u)){ u = 'https://' + u; }
+    hideMsg();
+    viewUrl.textContent = u; addrInput.value = u; viewState.textContent = 'Loading…';
+    frame.src = u;
+    var host = u.replace(/^https?:\/\//i, '').split('/')[0];
+    if(/spotify\.com|apple\.com|pandora\.com|youtube/i.test(host)){
+      showMsg('Heads up: ' + host + ' sends headers that refuse framing, and its player needs DRM/MSE this device may not have. If the viewport stays blank, that refusal is the site\u2019s — use Open in a new tab, or Forge\u2019s previews and radio on the left.');
+    } else {
+      setTimeout(function(){ viewState.textContent = 'If the pane stays blank, this site refuses to be framed (X-Frame-Options) — Forge can\u2019t override that; the simplifying helper is the planned fix.'; }, 2500);
+    }
+  }
+  function goHome(){
+    addrInput.value = 'forge://start'; viewUrl.textContent = 'forge://start'; viewState.textContent = 'Start page'; hideMsg();
+    if(startHTML === null){
+      startHTML = '<!doctype html><html><body style="font-family:system-ui,sans-serif;background:#232326;color:#f2f1ed;margin:0;padding:28px;line-height:1.55"><h2 style="margin:0 0 8px">Forge start page</h2><p style="color:#bdbdc2;max-width:520px">This pane is the browser viewport. Pages that allow framing render here; music services mostly don\u2019t — that\u2019s their header choice, and Forge says so instead of faking it.</p><p style="color:#bdbdc2">The music below this pane needs no framing at all: plain MP3/AAC straight into an &lt;audio&gt; tag. That\u2019s the path designed for a 2011 iPad — the five checks below are how you prove it on the real device.</p></body></html>';
+    }
+    frame.srcdoc = startHTML;
+  }
+  document.getElementById('addrForm').addEventListener('submit', function(ev){ ev.preventDefault(); loadUrl(addrInput.value); });
+  document.getElementById('btnHome').addEventListener('click', goHome);
+  document.getElementById('btnBack').addEventListener('click', function(){ try{ history.back(); }catch(e){} });
+  document.getElementById('btnFwd').addEventListener('click', function(){ try{ history.forward(); }catch(e){} });
+  frame.addEventListener('load', function(){ if(viewState.textContent === 'Loading…') viewState.textContent = 'Loaded (or refused — see note)'; });
+
+  var quicks = document.querySelectorAll('.quick button');
+  for(var qi = 0; qi < quicks.length; qi++){
+    quicks[qi].addEventListener('click', function(){
+      var svc = this.getAttribute('data-service'), go = this.getAttribute('data-go');
+      if(svc){ loadUrl(SERVICE_URLS[svc]); showMsg(SERVICE_NOTES[svc]); window.scrollTo(0, 0); }
+      else if(go){ loadUrl(go); }
+    });
+  }
+  goHome();
+
+  /* ---------- Capability check (live detection) ---------- */
+  var caps = [
+    {name:'Plain <audio> MP3 / AAC', ok: (function(){ var a = document.createElement('audio'); return !!(a.canPlayType && (a.canPlayType('audio/mpeg') || a.canPlayType('audio/mp4'))); })(), why:'The one format Forge v1 relies on — supported since early Safari.'},
+    {name:'JavaScript (ES5 shell)', ok:true, why:'This page itself. If you can read this row, the shell parsed.'},
+    {name:'Promise / fetch', ok: ('Promise' in window), why:'Modern apps assume it; polyfillable, unlike the rows below.'},
+    {name:'MediaSource (MSE)', ok: ('MediaSource' in window) || ('ManagedMediaSource' in window), why:'Adaptive streaming (YouTube, Spotify web). iPhone only got it in Safari 17.1.'},
+    {name:'Encrypted Media (EME)', ok: !!(navigator.requestMediaKeySystemAccess || window.WebKitMediaKeys || window.MSMediaKeys), why:'Hook for the DRM module — Widevine / FairPlay. The module itself can\u2019t be added by code.'},
+    {name:'Web Audio API', ok: !!('AudioContext' in window || 'webkitAudioContext' in window), why:'Effects & visualisers in modern players.'}
+  ];
+  var tb = document.getElementById('capBody');
+  caps.forEach(function(c){
+    var tr = document.createElement('tr');
+    var pill = c.ok ? '<span class="pill yes">Present</span>' : '<span class="pill no">Missing</span>';
+    tr.innerHTML = '<td><b></b></td><td>' + pill + '</td><td style="color:var(--muted)"></td>';
+    tr.querySelector('b').textContent = c.name;
+    tr.children[2].textContent = c.why;
+    tb.appendChild(tr);
+  });
+})();
+</script>
+</body>
+</html>
