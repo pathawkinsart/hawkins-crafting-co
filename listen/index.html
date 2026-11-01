@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="robots" content="noindex,nofollow">
+<title>Hawkins Music - Old-device edition</title>
+<style>
+body{margin:0;background:#111;color:#fff;font-family:Helvetica,Arial,sans-serif;font-size:20px;line-height:1.4;padding:16px}
+h1{font-size:28px;margin:0 0 6px}
+p{margin:0 0 16px;color:#ccc}
+a.btn{display:block;text-align:center;text-decoration:none;background:#ff8a3d;color:#241006;font-weight:bold;font-size:22px;padding:18px 12px;margin:0 0 14px;border-radius:14px}
+a.btn.dark{background:#2c2c2e;color:#fff;border:1px solid #555}
+a.btn.green{background:#2e7d32;color:#fff}
+.note{background:#222;border:1px solid #444;border-radius:12px;padding:14px;margin:16px 0;font-size:17px;color:#ddd}
+.note b{color:#fff}
+label{display:block;font-size:17px;margin:16px 0 6px;color:#ccc}
+input{width:100%;box-sizing:border-box;font-size:17px;padding:12px;border-radius:10px;border:1px solid #555;background:#222;color:#fff}
+button.save{width:100%;font-size:19px;font-weight:bold;padding:14px;margin-top:10px;border:0;border-radius:12px;background:#0a84ff;color:#fff}
+button.save:active{opacity:.7}
+#myStationWrap{display:none}
+.small{font-size:16px;color:#999}
+</style>
+</head>
+<body>
+<h1>Hawkins Music</h1>
+<p>Big buttons, for old iPads. Tap one and it opens that service itself.</p>
+
+<div class="note"><b>Honest note:</b> Pandora will not let another website play it inside a page, so this page does not try. These buttons open Pandora itself &mdash; in its app if you have it, or in Safari if you do not. That is the part old browsers can still handle.</div>
+
+<a class="btn" href="https://www.pandora.com">▶ Open Pandora</a>
+
+<div id="myStationWrap">
+<a class="btn green" id="myStationBtn" href="https://www.pandora.com">▶ My Pandora station</a>
+</div>
+
+<label for="stationInput">Save your Pandora station link (once, on this iPad only):</label>
+<input id="stationInput" type="text" placeholder="Paste a Pandora station link here">
+<button class="save" type="button" onclick="saveStation()">Save station on this device</button>
+<p class="small" id="savedMsg"></p>
+
+<a class="btn dark" href="https://open.spotify.com">Spotify</a>
+<a class="btn dark" href="https://music.youtube.com">YouTube Music</a>
+<a class="btn dark" href="https://music.apple.com">Apple Music</a>
+<a class="btn dark" href="https://www.iheart.com">iHeartRadio</a>
+<a class="btn dark" href="https://tunein.com">TuneIn Radio</a>
+<a class="btn dark" href="https://hawkinscraftingco.com/player/">My own music &mdash; Forge Player</a>
+
+<div class="note">
+<b>If Pandora says &ldquo;Get the App&rdquo;:</b><br>
+1. If the app will install on that iPad, install it once, then come back here and tap Open Pandora again &mdash; it should jump into the app.<br>
+2. If the app will not install because the iPad is too old, try Safari &gt; Share &gt; Request Desktop Website, then tap Open Pandora again. It does not always work, but it is worth one try.<br>
+3. If neither works, use My own music above &mdash; that player is plain audio, no account, and it does work on old browsers.
+</div>
+
+<p class="small">To keep this one tap away: in Safari, Share &gt; Add to Home Screen. Hidden page &mdash; not linked from the main Hawkins site.</p>
+
+<script>
+function loadStation() {
+  var saved = null;
+  try { saved = window.localStorage.getItem("hccPandoraStation"); } catch (e) { saved = null; }
+  if (saved) {
+    document.getElementById("myStationWrap").style.display = "block";
+    document.getElementById("myStationBtn").href = saved;
+    document.getElementById("stationInput").value = saved;
+    document.getElementById("savedMsg").innerHTML = "Saved on this device.";
+  }
+}
+function saveStation() {
+  var v = document.getElementById("stationInput").value;
+  if (!v) { document.getElementById("savedMsg").innerHTML = "Paste a link first."; return; }
+  try { window.localStorage.setItem("hccPandoraStation", v); } catch (e) {}
+  document.getElementById("myStationWrap").style.display = "block";
+  document.getElementById("myStationBtn").href = v;
+  document.getElementById("savedMsg").innerHTML = "Saved on this device. Tap My Pandora station above to use it.";
+}
+loadStation();
+</script>
+</body>
+</html>
