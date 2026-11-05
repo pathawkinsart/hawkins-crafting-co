@@ -232,25 +232,99 @@ header.hero h1{color:#f7ecd9}
 .toggle{min-height:48px}
 .btn{min-height:50px}
 @media print{ .tabbar{display:none!important} }
+/* ===== type-your-location ===== */
+.locbar{background:var(--accent-soft);border-bottom:1px solid var(--line)}
+.locbar .wrap{display:flex;align-items:center;gap:10px;padding-top:9px;padding-bottom:9px;flex-wrap:wrap}
+.locbar .loclabel{font-weight:700;font-size:15.5px}
+.locbar .changeloc{background:transparent;border:0;color:var(--accent);font-weight:800;font-size:15px;text-decoration:underline;text-underline-offset:3px;padding:6px 4px}
+.locpicker{background:var(--surface);border:2px solid var(--accent);border-radius:14px;padding:22px;margin:22px 0;box-shadow:var(--shadow)}
+.locpicker h2{font-size:clamp(26px,4vw,34px);margin-bottom:6px}
+.locpicker p{color:var(--ink2);margin:0 0 12px;max-width:62ch}
+.locpicker input[type=text]{width:100%;font:inherit;font-size:19px;padding:15px 16px;border:1.5px solid var(--line-strong);border-radius:10px;background:var(--surface2);color:var(--ink)}
+.loc-suggest{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.loc-suggest:empty{display:none}
+.suggestbtn{min-height:54px;padding:12px 16px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:16.5px;text-align:left}
+.suggestbtn small{display:block;font-weight:500;color:var(--ink2);font-size:14px}
+.loc-quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.loc-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center}
+.loc-note{font-size:14.5px;color:var(--muted);margin-top:12px!important}
+.fallback-card{border:2px solid var(--warn-line);background:var(--warn-bg);border-radius:14px;padding:22px;margin:22px 0;color:var(--ink)}
+.fallback-card h2{font-size:clamp(24px,3.6vw,32px);margin-bottom:8px;color:var(--warn-ink)}
+.fallback-card p,.fallback-card li{color:var(--ink)}
+.fallback-card .rphone{font-family:"Newsreader",Georgia,serif;font-size:22px;font-weight:700}
+@media print{ .locbar,.locpicker{display:none!important} }
 </style>
 </head>
 <body>
 
 <div class="safetybar" role="region" aria-label="Safety tools">
   <div class="wrap">
-    <span class="danger-note">In immediate danger? Call <a href="tel:911">911</a> · Willow (free, 24/7, Rochester): <a href="tel:+15852227233">585-222-7233</a></span>
+    <span class="danger-note" id="safetyNote">In immediate danger? Call <a href="tel:911">911</a> · Willow (free, 24/7, Rochester): <a href="tel:+15852227233">585-222-7233</a></span>
     <span class="spacer"></span>
     <button class="btn-clearpage" id="clearPageBtn" type="button">Clear this page</button>
     <button class="btn-exit" id="quickExitBtn" type="button">Quick exit ✕</button>
   </div>
 </div>
 
+<div class="locbar" id="locBar" role="region" aria-label="Your location">
+  <div class="wrap">
+    <span class="loclabel" id="locBarText">Your location: not chosen yet — type it below so you get the right law for where you are.</span>
+    <span class="spacer" style="flex:1"></span>
+    <button class="changeloc" id="changeLocBtn" type="button">Change location</button>
+  </div>
+</div>
+
 <div class="wrap">
 <header class="hero">
-  <p class="eyebrow">Monroe County · New York Family Court</p>
+  <p class="eyebrow" id="heroEyebrow">Monroe County · New York Family Court</p>
   <h1>The Morales Report maker</h1>
-  <p style="font-family:'Newsreader',Georgia,serif;font-size:clamp(19px,2.6vw,24px);color:var(--accent);margin:-4px 0 12px;font-weight:600">Order of Protection Helper — file, renew, and re-file in New York</p>
-  <p class="lede">In New York it's called an <strong>Order of Protection</strong>. This page helps you file one, renew one, or report a violation. Plain words. Short steps. No lawyer needed. No fee.</p>
+  <p id="heroSubtitle" style="font-family:'Newsreader',Georgia,serif;font-size:clamp(19px,2.6vw,24px);color:var(--accent);margin:-4px 0 12px;font-weight:600">Order of Protection Helper — file, renew, and re-file in New York</p>
+  <p class="lede" id="heroLede">In New York it's called an <strong>Order of Protection</strong>. This page helps you file one, renew one, or report a violation. Plain words. Short steps. No lawyer needed. No fee.</p>
+
+  <div class="locpicker" id="locationPicker">
+    <h2>Where are you?</h2>
+    <p>Type your city, county, or state. You'll get the court, forms, and law for that place — checked against official sources, in plain words.</p>
+    <label class="sr-only" for="locInput">Type your city, county, or state</label>
+    <input type="text" id="locInput" placeholder="Try “Los Angeles, CA” or “Rochester, NY”" autocomplete="off" />
+    <div class="loc-suggest" id="locSuggestions" aria-live="polite"></div>
+    <div class="loc-actions">
+      <button class="btn" id="locGoBtn" type="button">Show my information</button>
+    </div>
+    <p style="margin-top:16px;margin-bottom:6px;font-weight:700;color:var(--ink)">Places we've checked word-for-word — tap one if it's you:</p>
+    <div class="loc-quick">
+      <button class="quickbtn" type="button" data-locpick="ny">Monroe County, NY — Rochester area</button>
+      <button class="quickbtn" type="button" data-locpick="la">Los Angeles County, CA</button>
+    </div>
+    <p class="loc-note">Typing only. This page <strong>never uses your phone's GPS and never asks for location permission</strong>. What you type stays on your own device, like everything else here — it is never sent anywhere or tracked.</p>
+  </div>
+
+  <div class="fallback-card" id="fallbackPanel" hidden>
+    <h2 id="fallbackTitle">We haven't checked the law for that place yet, so we won't guess.</h2>
+    <p><strong>If you are in danger right now, call <a href="tel:911">911</a> first.</strong> Everything below can wait until you are safe.</p>
+    <h3 style="font-size:19px;margin:16px 0 6px">The general process — this holds almost everywhere</h3>
+    <ol class="steps">
+      <li>Go to your <strong>county courthouse</strong> — ask for <strong>Family Court</strong> or <strong>Superior Court</strong>.</li>
+      <li>Ask the clerk for the <strong>domestic violence restraining order forms</strong>. Court staff can usually help you fill them in, free.</li>
+      <li>A judge can grant a <strong>temporary order the same day</strong>, without the other person there.</li>
+      <li>You will get a <strong>hearing date a few weeks later</strong>, where both sides are heard.</li>
+      <li>The other person <strong>must be served</strong> (handed the papers) before the hearing — you usually cannot serve them yourself; ask the clerk who does it and whether the sheriff does it free.</li>
+      <li>Bring your <strong>evidence and witnesses</strong> to the hearing: photo ID, dated timeline, printed texts/emails, photos, police reports, medical records.</li>
+    </ol>
+    <h3 style="font-size:19px;margin:16px 0 6px">Free help that works anywhere in the U.S.</h3>
+    <div class="resource"><span class="rname">National Domestic Violence Hotline</span><span class="rphone"><a href="tel:+18007997233">1-800-799-7233</a></span><p>Free, confidential, 24/7. Or text <strong>START</strong> to <strong>88788</strong>. They can connect you to help in your own county.</p></div>
+    <div class="resource"><span class="rname">WomensLaw.org</span><span class="rphone" style="font-size:19px"><a href="https://www.womenslaw.org" target="_blank" rel="noopener">womenslaw.org</a></span><p>Look up <strong>your state</strong> there for the exact forms, steps, and courts — written in plain language by the National Network to End Domestic Violence.</p></div>
+    <h3 style="font-size:19px;margin:16px 0 6px">How to find your local court</h3>
+    <ol class="steps">
+      <li>Search online for <strong>“[your county] family court”</strong> or <strong>“[your county] superior court.”</strong></li>
+      <li>Or call the courthouse clerk and say: <em>“I need to file for a domestic violence restraining order. Where do I go, and which forms do I need?”</em></li>
+      <li>Ask the clerk: Is filing free? Can a judge see me today for a temporary order? Who serves the papers?</li>
+    </ol>
+    <h3 style="font-size:19px;margin:16px 0 6px">Near one of the places we've fully checked?</h3>
+    <div class="loc-quick">
+      <button class="quickbtn" type="button" data-locpick="ny">Monroe County, NY — Rochester area</button>
+      <button class="quickbtn" type="button" data-locpick="la">Los Angeles County, CA</button>
+    </div>
+  </div>
   <p style="color:var(--muted);font-size:15px;max-width:760px">Free legal <em>information</em> — not a lawyer, not legal advice. Only a judge can issue an order. Full details are in the Help &amp; Sources tab.</p>
   <span class="srcline">✓ “No fee / no lawyer needed” checked Nov 5, 2026 — NY Courts (nycourts.gov) · WomensLaw.org · Family Court Act agree. Every key fact on this page carries its check line; the full table is in Help &amp; Sources.</span>
   <div style="margin:18px 0 4px">
@@ -269,8 +343,8 @@ header.hero h1{color:#f7ecd9}
     <span class="badge">FREE</span>
     <div>
       <p class="big">Is it free? Yes — completely.</p>
-      <p>Filing, extending, re-filing, and reporting a violation in <strong>Family Court costs $0</strong>. No filing fee. You do <strong>not</strong> need a lawyer. If you can't afford one, you can <strong>ask the judge to assign you one for free</strong>. (Divorce and other <em>Supreme Court</em> civil cases are a different court and can have fees — Family Court is free.)</p>
-      <span class="srcline">✓ Checked Nov 5, 2026 — NY Courts (nycourts.gov) · WomensLaw.org · Legal Aid sources agree. One caution about online-filing fees is flagged in Help &amp; Sources.</span>
+      <p id="freeBannerText">Filing, extending, re-filing, and reporting a violation in <strong>Family Court costs $0</strong>. No filing fee. You do <strong>not</strong> need a lawyer. If you can't afford one, you can <strong>ask the judge to assign you one for free</strong>. (Divorce and other <em>Supreme Court</em> civil cases are a different court and can have fees — Family Court is free.)</p>
+      <span class="srcline" id="freeBannerCheck">✓ Checked Nov 5, 2026 — NY Courts (nycourts.gov) · WomensLaw.org · Legal Aid sources agree. One caution about online-filing fees is flagged in Help &amp; Sources.</span>
     </div>
   </div>
 
@@ -287,7 +361,7 @@ header.hero h1{color:#f7ecd9}
   </div>
 
 </header>
-  <div class="tabbar" role="tablist" aria-label="Main sections">
+  <div class="tabbar" id="mainTabbar" role="tablist" aria-label="Main sections" hidden>
     <button class="maintab" role="tab" id="mtab-start" data-tab="start" aria-selected="true" type="button">Start</button>
     <button class="maintab" role="tab" id="mtab-file" data-tab="file" aria-selected="false" type="button">File</button>
     <button class="maintab" role="tab" id="mtab-renew" data-tab="renew" aria-selected="false" type="button">Renew or Re-file</button>
@@ -302,7 +376,7 @@ header.hero h1{color:#f7ecd9}
 <section id="ask" aria-labelledby="ask-h">
   <div class="sec-head">
     <h2 id="ask-h">Ask a question</h2>
-    <p>Type what you're wondering in your own words — like “what do I do if he texts me anyway?” Every answer explains the law simply and ends with numbered steps you can actually take. Answers come from the New York rules covered on this page; for advice about your exact situation, use the free help at the bottom.</p>
+    <p id="askIntro">Type what you're wondering in your own words — like “what do I do if he texts me anyway?” Every answer explains the law simply and ends with numbered steps you can actually take. Answers come from the New York rules covered on this page; for advice about your exact situation, use the free help at the bottom.</p>
   </div>
   <div class="askwrap">
     <div class="chatlog" id="chatLog" aria-live="polite" aria-label="Answers">
@@ -440,6 +514,75 @@ header.hero h1{color:#f7ecd9}
   </div>
 </section>
 
+<!-- ================= LOS ANGELES: PATHS ================= -->
+<section id="laPaths" aria-labelledby="lapaths-h" hidden>
+  <div class="sec-head">
+    <h2 id="lapaths-h">Start here: which path is yours? — Los Angeles County</h2>
+    <p>In California it's called a <strong>Domestic Violence Restraining Order (DVRO)</strong>, under the Domestic Violence Prevention Act (Family Code starting at §6200). Pick the path that matches your situation — the form changes depending on which it is. Every path is <strong>free</strong>.</p>
+  </div>
+  <div class="card pathpanel">
+    <h3>1 · First filing — asking the court for a DVRO</h3>
+    <div class="free-strip"><span aria-hidden="true">💲</span><p><strong>Cost: $0.</strong> There is no filing fee for a domestic violence restraining order in California, no lawyer required, and the sheriff serves the papers for free.</p></div>
+    <div class="lawbox"><span class="lawlabel">The law, simply</span><p>A DVRO protects you from abuse by a spouse or ex-spouse, someone you live or lived with, a dating partner, the other parent of your child, or a close relative (<cite>Family Code §§ 6200, 6211, 6320</cite>). “Abuse” includes hurting or trying to hurt you, threats, stalking, and disturbing your peace. A judge reviews your request typically the <strong>same day or within 24 hours</strong> and can grant a <strong>Temporary Restraining Order (DV-110)</strong> right away, without the other person there. Your hearing is set within about <strong>21 to 25 days</strong>.</p></div>
+    <h4>The forms (Judicial Council — free from California Courts)</h4>
+    <table class="map">
+      <thead><tr><th>Form</th><th>What it is</th></tr></thead>
+      <tbody>
+        <tr><td><span class="formtag">DV-100</span></td><td><strong>Request for Domestic Violence Restraining Order</strong> — the main form you fill out.</td></tr>
+        <tr><td><span class="formtag">DV-101</span></td><td><strong>Description of Abuse</strong> — where you describe what happened (your incident log below fills this in).</td></tr>
+        <tr><td><span class="formtag">DV-109</span></td><td><strong>Notice of Court Hearing</strong> — the court fills in your hearing date.</td></tr>
+        <tr><td><span class="formtag">DV-110</span></td><td><strong>Temporary Restraining Order</strong> — the judge's emergency order, if granted.</td></tr>
+        <tr><td><span class="formtag">DV-200</span></td><td><strong>Proof of Personal Service</strong> — filled out by whoever serves the papers.</td></tr>
+        <tr><td><span class="formtag">DV-120</span></td><td><strong>Response</strong> — the other person's form, not yours.</td></tr>
+        <tr><td><span class="formtag">DV-130</span></td><td><strong>Restraining Order After Hearing</strong> — the longer order the judge may grant at your hearing.</td></tr>
+      </tbody>
+    </table>
+    <h4>Steps</h4>
+    <ol class="steps">
+      <li><strong>Write down what happened</strong> — dates, places, exact words/threats, injuries, photos, texts. The worksheet below turns this into an incident log for your DV-101.</li>
+      <li><strong>Fill in DV-100 + DV-101</strong> at home from your worksheet, use the court's free <strong>“File At Home”</strong> online interview tool, or get free help at a Family Law Self-Help Center.</li>
+      <li><strong>File</strong> at Los Angeles Superior Court — Stanley Mosk Courthouse, 111 N. Hill St., Los Angeles, CA 90012 (Family Law), or another LA County courthouse that handles family law.</li>
+      <li><strong>A judge reviews it the same day or within 24 hours</strong> and may grant a Temporary Restraining Order (DV-110) right away.</li>
+      <li><strong>The other person must be served at least 5 days before the hearing.</strong> You cannot serve the papers yourself — someone 18 or older who is not part of the case must hand-deliver them, or the sheriff does it free.</li>
+      <li><strong>Come to the hearing</strong> (set within about 21–25 days) with your evidence and witnesses. Both sides are heard; the judge decides by “more likely than not.”</li>
+    </ol>
+    <div class="nextstep"><strong>Your next step:</strong> scroll to “Build your worksheet” and write your first incident. That's the heart of the DV-101, and it's done once it's written.</div>
+    <span class="srcline">✓ Forms, steps, and law on this screen checked Nov 5, 2026 — California Courts (courts.ca.gov) · LA Superior Court (lacourt.org) · Family Code §§ 6200, 6320 · WomensLaw.org California. Full check table in Help &amp; Sources.</span>
+  </div>
+  <div class="card pathpanel" style="margin-top:14px">
+    <h3>2 · Renew it — your order is still active but the end date is coming</h3>
+    <div class="free-strip"><span aria-hidden="true">💲</span><p><strong>Cost: $0.</strong> No fee to renew. File <span class="formtag">DV-700</span> <strong>Request to Renew Restraining Order</strong> + <span class="formtag">DV-710</span> <strong>Notice of Hearing to Renew</strong> during the <strong>3 months before</strong> your order expires — and always <strong>before</strong> it expires. Once it lapses it cannot be renewed; a brand-new DV-100 request must be filed instead.</p></div>
+    <div class="lawbox"><span class="lawlabel">The law, simply</span><p>Under <cite>Family Code § 6345</cite>, you do <strong>not</strong> need to prove new abuse to renew. A renewed order can last <strong>5 or more years, or permanently</strong>, at the judge's discretion — and your current order stays in effect until the renewal hearing.</p></div>
+    <h4>Steps</h4>
+    <ol class="steps">
+      <li><strong>Find the expiration date</strong> on your DV-130 and enter it in Step 1a below — the page counts your days left.</li>
+      <li><strong>Complete DV-700 + DV-710</strong> during the 3 months before that date.</li>
+      <li><strong>File and have the papers served</strong> on the other person (sheriff serves free).</li>
+      <li><strong>Go to the renewal hearing.</strong> Your current order protects you until the judge decides.</li>
+    </ol>
+    <span class="srcline">✓ Renewal rules checked Nov 5, 2026 — California Courts · Family Code § 6345 · WomensLaw.org California agree.</span>
+  </div>
+  <div class="card pathpanel" style="margin-top:14px">
+    <h3>3 · Re-file — your order already expired</h3>
+    <div class="free-strip"><span aria-hidden="true">💲</span><p><strong>Cost: $0.</strong> A brand-new request is free, just like the first one.</p></div>
+    <p>An expired order can't be renewed, so you file a <strong>new DV-100</strong> (plus DV-101). Lead with the newest incidents, new threats, or ongoing contact, and include the earlier history and the old order as background. Then the same steps as a first filing: same-day judge review for a temporary order, free sheriff service, hearing in about 21–25 days.</p>
+    <span class="srcline">✓ Checked Nov 5, 2026 — California Courts · WomensLaw.org California agree.</span>
+  </div>
+  <div class="card pathpanel" style="margin-top:14px">
+    <h3>4 · They broke the order — reporting a violation</h3>
+    <div class="free-strip"><span aria-hidden="true">💲</span><p><strong>Cost: $0.</strong> Calling the police is free. Do both: <strong>call the police</strong> and <strong>file a violation report with the court</strong>.</p></div>
+    <div class="lawbox"><span class="lawlabel">The law, simply</span><p>Knowingly breaking a restraining order is a crime under <cite>Penal Code § 273.6</cite>, and police must arrest when they have probable cause (<cite>Penal Code § 836</cite>). A first offense is a misdemeanor: up to <strong>1 year in county jail and a $1,000 fine</strong>. A repeat violation within 7 years involving violence or a credible threat can be charged as a <strong>felony, up to 3 years</strong>.</p></div>
+    <h4>Steps</h4>
+    <ol class="steps">
+      <li><strong>If it's happening now or you're unsafe, call 911.</strong> Tell the officer there is a restraining order — they can verify it and arrest.</li>
+      <li><strong>Save everything</strong>: screenshots with dates, voicemails, photos, witness names. Don't delete the thread.</li>
+      <li><strong>Log the violation</strong> in your incident log below while it's fresh — one entry per violation.</li>
+      <li><strong>File a violation report with the court</strong> that issued your order, and keep a copy of the order with you.</li>
+    </ol>
+    <span class="srcline">✓ Checked Nov 5, 2026 — Penal Code §§ 273.6, 836 · California Courts · WomensLaw.org California agree.</span>
+  </div>
+</section>
+
 <!-- ================= THE LAW ================= -->
 <section id="law" aria-labelledby="law-h">
   <div class="sec-head">
@@ -549,7 +692,7 @@ header.hero h1{color:#f7ecd9}
 <section id="worksheet" aria-labelledby="prep-h">
   <div class="sec-head">
     <h2 id="prep-h">Prep my paperwork — the main job of this page</h2>
-    <p>Five steps: <strong>1)</strong> answer a short interview, <strong>2)</strong> this page fills your paperwork packet from your answers and your file number, <strong>3)</strong> you review and fix every answer, <strong>4)</strong> you download or print the packet with its cover checklist, <strong>5)</strong> you file it using the Monroe County steps right below the packet. Your case details are typed once and reused in every form.</p>
+    <p id="worksheetIntro">Five steps: <strong>1)</strong> answer a short interview, <strong>2)</strong> this page fills your paperwork packet from your answers and your file number, <strong>3)</strong> you review and fix every answer, <strong>4)</strong> you download or print the packet with its cover checklist, <strong>5)</strong> you file it using the Monroe County steps right below the packet. Your case details are typed once and reused in every form.</p>
   </div>
 
   <!-- SAVE & RESUME -->
@@ -591,7 +734,7 @@ header.hero h1{color:#f7ecd9}
     <div class="grid2">
       <div class="field"><label for="myName">Your full legal name (petitioner)</label><input type="text" id="myName" placeholder="Your name" autocomplete="off" /></div>
       <div class="field"><label for="respName">Other person's full name (respondent)</label><input type="text" id="respName" placeholder="Their name" autocomplete="off" /></div>
-      <div class="field"><label for="relationship">How are you connected to them?</label><select id="relationship"><option value="">Choose one…</option><option>Current spouse</option><option>Former spouse</option><option>We have a child together</option><option>Related by blood or marriage</option><option>We live / lived together as family</option><option>Dating or intimate partner (current)</option><option>Dating or intimate partner (former)</option><option>Other / not sure</option></select><p class="hint">Family Court Act § 812 — this is why Family Court can hear your case.</p></div>
+      <div class="field"><label for="relationship">How are you connected to them?</label><select id="relationship"><option value="">Choose one…</option><option>Current spouse</option><option>Former spouse</option><option>We have a child together</option><option>Related by blood or marriage</option><option>We live / lived together as family</option><option>Dating or intimate partner (current)</option><option>Dating or intimate partner (former)</option><option>Other / not sure</option></select><p class="hint" id="relHint">Family Court Act § 812 — this is why Family Court can hear your case.</p></div>
       <div class="field"><label for="safeContact">A safe phone or email for the court to reach you</label><p class="hint">Only use a contact the other person can't see. You can also ask the clerk to keep your address confidential.</p><input type="text" id="safeContact" placeholder="Safe phone or email" autocomplete="off" /></div>
       <div class="field"><label for="childrenInfo">Children involved (names/ages, or “none”)</label><input type="text" id="childrenInfo" placeholder="e.g. Daughter, 7 — or: none" autocomplete="off" /></div>
       <div class="field"><label for="respWhere">Where can the respondent be found for service? (address/work — optional)</label><p class="hint">Helps the court arrange free service. Skip if you don't know or it's unsafe to write down here.</p><input type="text" id="respWhere" placeholder="Optional" autocomplete="off" /></div>
@@ -607,7 +750,7 @@ header.hero h1{color:#f7ecd9}
 
   <fieldset>
     <legend>Step 1d · Protection you need + path details</legend>
-    <div class="field"><label>Tap everything you're asking the judge for (Form 8-2 “relief” / § 842 conditions)</label>
+    <div class="field"><label id="protLabel">Tap everything you're asking the judge for (Form 8-2 “relief” / § 842 conditions)</label>
       <div class="toggles" id="protectionToggles">
         <button type="button" class="toggle" aria-pressed="false">Stay away from me</button>
         <button type="button" class="toggle" aria-pressed="false">No contact at all — calls, texts, social media, through others</button>
@@ -620,8 +763,8 @@ header.hero h1{color:#f7ecd9}
       </div>
     </div>
     <div class="grid2">
-      <div class="field"><label for="extLength">Extension only: how long are you asking for?</label><select id="extLength"><option value="">Not extending</option><option>1 year</option><option>2 years</option><option>Up to 5 years (serious/aggravating circumstances)</option></select></div>
-      <div class="field"><label for="goodCause">Extension / re-file: why do you still need protection? (“good cause”)</label><textarea id="goodCause" placeholder="e.g. He still drives past my home weekly. I remain afraid because…"></textarea></div>
+      <div class="field"><label for="extLength" id="extLabel">Extension only: how long are you asking for?</label><select id="extLength"><option value="">Not extending</option><option>1 year</option><option>2 years</option><option id="extOpt5">Up to 5 years (serious/aggravating circumstances)</option></select></div>
+      <div class="field"><label for="goodCause" id="gcLabel">Extension / re-file: why do you still need protection? (“good cause”)</label><textarea id="goodCause" placeholder="e.g. He still drives past my home weekly. I remain afraid because…"></textarea></div>
     </div>
   </fieldset>
 
@@ -649,7 +792,7 @@ header.hero h1{color:#f7ecd9}
   <!-- STEP 4: PACKET OUTPUT -->
   <div class="card" id="packetCard">
     <h3 style="font-size:22px;margin-bottom:6px">Step 4 · Your packet</h3>
-    <p style="color:var(--ink2);margin-top:0">The packet starts with a <strong>cover checklist</strong> (what's inside, what to bring, what to sign), then the filled draft. <strong>Important:</strong> courts want the official blank forms — copy your draft onto the official Form 8-2 / GF-10 / GF-8 (free at the courthouse or from NY Courts online), or bring this printout and let the clerk help you transfer it. Never sign a sworn form until the clerk or notary tells you to.</p>
+    <p style="color:var(--ink2);margin-top:0" id="packetCardIntro">The packet starts with a <strong>cover checklist</strong> (what's inside, what to bring, what to sign), then the filled draft. <strong>Important:</strong> courts want the official blank forms — copy your draft onto the official Form 8-2 / GF-10 / GF-8 (free at the courthouse or from NY Courts online), or bring this printout and let the clerk help you transfer it. Never sign a sworn form until the clerk or notary tells you to.</p>
     <div class="draftout" id="packetOut" tabindex="0">Your built packet will appear here after you press “Build my packet.”</div>
     <div class="draft-actions">
       <button class="btn" id="downloadPacketBtn" type="button">Download packet (.txt)</button>
@@ -782,6 +925,143 @@ header.hero h1{color:#f7ecd9}
   </div>
 </section>
 
+<!-- ================= LOS ANGELES: LAW ================= -->
+<section id="laLaw" aria-labelledby="lalaw-h" hidden>
+  <div class="sec-head">
+    <h2 id="lalaw-h">The law, in plain words — California</h2>
+    <p>What it means for you, in everyday language — then the actual California law, cited, so you can check it or show a clerk, advocate, or lawyer exactly what you're talking about.</p>
+  </div>
+  <details class="lawitem">
+    <summary>What is a Domestic Violence Restraining Order, legally? <span class="plus" aria-hidden="true">+</span></summary>
+    <div class="body">
+      <p>It's a court order signed by a judge telling a specific person what they must or must not do — stay away from you, stop contacting you, move out of a shared home, stay away from your children, and more. Breaking it is a crime, even if nobody is physically hurt — a forbidden text can be enough.</p>
+      <div class="lawbox"><span class="lawlabel">The law</span><p>The Domestic Violence Prevention Act, <cite>Family Code §§ 6200 et seq.</cite> What a judge can order — including stay-away and no-contact orders — is in <cite>§ 6320</cite> and related sections.</p></div>
+    </div>
+  </details>
+  <details class="lawitem">
+    <summary>Who can ask for one? <span class="plus" aria-hidden="true">+</span></summary>
+    <div class="body">
+      <p>You qualify if the person who abused you is: your spouse or ex-spouse; someone you live or lived with; someone you are or were dating; the other parent of your child; or a close relative (parent, child, sibling, grandparent, in-law).</p>
+      <div class="lawbox"><span class="lawlabel">The law</span><p><cite>Family Code § 6211</cite> defines who is protected under the Domestic Violence Prevention Act; “abuse” is defined in <cite>§ 6203</cite> and includes disturbing another party's peace under <cite>§ 6320</cite>.</p></div>
+    </div>
+  </details>
+  <details class="lawitem">
+    <summary>Temporary vs. after-hearing orders <span class="plus" aria-hidden="true">+</span></summary>
+    <div class="body">
+      <p>A <strong>Temporary Restraining Order (DV-110)</strong> is emergency protection a judge can grant typically the same day or within 24 hours of filing, based on your papers alone. It lasts until your court hearing, which is set within about <strong>21 to 25 days</strong>. It protects you once the other person has been <strong>served</strong> with it. The other person must be served <strong>at least 5 days before the hearing</strong> — by the sheriff (free) or by any adult who is not part of the case. You cannot serve the papers yourself. An <strong>order after hearing (DV-130)</strong> comes after both sides are heard.</p>
+      <div class="lawbox"><span class="lawlabel">The law</span><p>Temporary orders and hearing timelines: <cite>Family Code §§ 240, 6320–6327, 6345</cite>; service and proof of service use form DV-200. At the hearing the judge decides whether the abuse is “more likely than not.”</p></div>
+    </div>
+  </details>
+  <details class="lawitem">
+    <summary>How long does an order after hearing last? <span class="plus" aria-hidden="true">+</span></summary>
+    <div class="body">
+      <p>Up to <strong>5 years</strong>. If the judge does not write an expiration date, the order lasts <strong>3 years</strong> by default. Check the date printed on your DV-130 — your renewal deadline (3 months before it) is counted from that date.</p>
+      <div class="lawbox"><span class="lawlabel">The law</span><p><cite>Family Code § 6345</cite>: an order after hearing may last up to five years; if no expiration date is stated, it expires three years after issuance.</p></div><span class="srcline">✓ Checked Nov 5, 2026 — Family Code § 6345 · California Courts · WomensLaw.org California agree.</span>
+    </div>
+  </details>
+  <details class="lawitem">
+    <summary>Renewing, re-filing, and violations — the rules in one place <span class="plus" aria-hidden="true">+</span></summary>
+    <div class="body">
+      <p><strong>Renew (before it expires):</strong> file DV-700 + DV-710 during the 3 months before expiration. No new abuse needs to be proven. The renewed order can last 5 or more years, or permanently. <strong>Re-file (after it expires):</strong> it cannot be renewed once lapsed — file a brand-new DV-100. <strong>Violation:</strong> call the police and file a violation report with the court; knowingly breaking the order is a crime.</p>
+      <div class="lawbox"><span class="lawlabel">The law</span><p>Renewal: <cite>Family Code § 6345</cite>. Violation crime: <cite>Penal Code § 273.6</cite> (first offense a misdemeanor — up to 1 year county jail, $1,000 fine; a repeat within 7 years with violence or a credible threat can be a felony, up to 3 years). Mandatory arrest on probable cause: <cite>Penal Code § 836</cite>.</p></div><span class="srcline">✓ Checked Nov 5, 2026 — Family Code § 6345 · Penal Code §§ 273.6, 836 · California Courts agree.</span>
+    </div>
+  </details>
+</section>
+
+<!-- ================= LOS ANGELES: FILE IT ================= -->
+<section id="laFile" aria-labelledby="lafile-h" hidden>
+  <div class="sec-head">
+    <h2 id="lafile-h">Step 5 · File it — Los Angeles Superior Court</h2>
+    <p>You've got the packet. Filing itself is something you do — in person (best if you need protection today) or starting online with the court's free “File At Home” tool. Either way it's free.</p>
+  </div>
+  <div class="grid-cards">
+    <div class="card">
+      <h3 style="font-size:21px;margin-bottom:8px">In person (recommended for same-day protection)</h3>
+      <p style="margin:0 0 6px"><strong>Los Angeles Superior Court — Stanley Mosk Courthouse</strong><br/>111 N. Hill St., Los Angeles, CA 90012 (Family Law)<br/>You may also file at another LA County courthouse that handles family law.</p>
+      <ol class="steps">
+        <li><strong>Go early in the day</strong> — a judge reviews DVRO requests typically the same day or within 24 hours. Bring photo ID if you have it.</li>
+        <li><strong>Say:</strong> “I'm here to file a Request for a Domestic Violence Restraining Order, Form DV-100.” (Your full clerk script is in the section above.)</li>
+        <li><strong>Hand over your packet.</strong> If anything's missing, the clerk can tell you what to fix — that's normal, not a rejection.</li>
+        <li><strong>Get your hearing date in writing</strong> (on form DV-109) and your Temporary Restraining Order (DV-110) if the judge grants one.</li>
+        <li><strong>Arrange service:</strong> the other person must be served at least 5 days before the hearing. Ask the clerk about free sheriff service — you cannot serve the papers yourself.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3 style="font-size:21px;margin-bottom:8px">Free help getting the forms done</h3>
+      <ul class="plain">
+        <li><strong>“File At Home”</strong> — the court's free online interview tool walks you through the DV-100 questions and prepares your forms.</li>
+        <li><strong>Family Law Self-Help Centers</strong> — free walk-in help: Stanley Mosk Courthouse <strong>Room 426</strong>, plus Van Nuys, Pasadena, Pomona, Santa Monica, Inglewood, Torrance, and Compton.</li>
+        <li><strong>Counsel for Justice Domestic Violence Project</strong> — Stanley Mosk Courthouse, <strong>Room 235</strong>: free help preparing a DVRO request.</li>
+      </ul>
+      <h3 style="font-size:21px;margin:14px 0 8px">What to bring</h3>
+      <ul class="checklist">
+        <li>Your completed packet + official forms (signed as the clerk directs)</li>
+        <li>Photo ID, if you have one</li>
+        <li>Your current restraining order, if you have one (renewal / violation)</li>
+        <li>Evidence: screenshots, texts, photos, medical papers, police report numbers</li>
+        <li>Your incident log / worksheet from this page</li>
+        <li>Names and addresses of any witnesses, if known</li>
+        <li>A safe mailing address and phone for the court</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LOS ANGELES: AFTER FILING ================= -->
+<section id="laAfter" aria-labelledby="laafter-h" hidden>
+  <div class="sec-head">
+    <h2 id="laafter-h">What happens after you file — Los Angeles</h2>
+    <p>The same basic sequence for every path. The court gives you exact dates in writing.</p>
+  </div>
+  <ol class="timeline">
+    <li><h3>A judge reviews your request — same day or within 24 hours</h3><p>The judge can grant a Temporary Restraining Order (DV-110) right away, based on your papers alone, without the other person there.</p></li>
+    <li><h3>The papers are served — free</h3><p>The sheriff (free) or an adult who is not part of the case hand-delivers the papers. Service must happen at least 5 days before the hearing; the server completes form DV-200. You never serve them yourself.</p></li>
+    <li><h3>The hearing — within about 21 to 25 days</h3><p>Both sides can tell their story, bring witnesses and evidence, and have a lawyer. The judge decides by “more likely than not.”</p></li>
+    <li><h3>The judge decides</h3><p>An order after hearing (DV-130) can last up to 5 years (3 years if no date is written). You get the decision and paperwork in writing.</p></li>
+    <li><h3>Live with the order — and log everything</h3><p>Keep a copy with you and one at home, work, and your children's school. Keep logging any contact or violations — that log matters if you ever renew or report a violation.</p></li>
+    <li><h3>Before it expires</h3><p>File DV-700 + DV-710 during the 3 months before the expiration date. After it lapses, it cannot be renewed — only a new DV-100.</p></li>
+  </ol>
+</section>
+
+<!-- ================= LOS ANGELES: HEARING PREP ================= -->
+<section id="laHearing" aria-labelledby="lahearing-h" hidden>
+  <div class="sec-head">
+    <h2 id="lahearing-h">Hearing prep — walk in ready (Los Angeles)</h2>
+    <p>The hearing is where the judge decides whether to grant the order after hearing (DV-130). It is usually short, and judges do this every day. Here's what to bring and what will happen.</p>
+    <span class="srcline">✓ Bring-list and hearing steps checked Nov 5, 2026 — California Courts guidance · WomensLaw.org California · court-practice guides agree (practical guidance, not a statute).</span>
+  </div>
+  <div class="grid-cards">
+    <div class="card">
+      <h3 style="font-size:21px;margin-bottom:8px">Bring this</h3>
+      <ul class="checklist">
+        <li>Photo ID</li>
+        <li>Your case number (it's on all your paperwork — the clerk and judge will use it)</li>
+        <li>Copies of your request (DV-100/DV-101) and the Temporary Restraining Order (DV-110)</li>
+        <li>A written, dated timeline of incidents — your incident log from Step 1c, printed</li>
+        <li>Printed evidence, organized oldest-to-newest: texts and emails (dates visible), voicemails saved, photos of injuries or damage with the date written on each, police reports, medical records, and any prior orders</li>
+        <li>Witness names and phone numbers — and the witnesses themselves, if they'll come</li>
+        <li>Two copies of everything printed: one for the judge, one for you (the court may also need one for the other side)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="font-size:21px;margin-bottom:8px">What to expect in the room</h3>
+      <ul class="plain">
+        <li><strong>Both sides testify under oath.</strong> Tell the truth, in your own words.</li>
+        <li><strong>You go first:</strong> what happened, when, where — the judge may ask questions as you go.</li>
+        <li><strong>The other person gets to respond</strong> and can bring a lawyer. Speak to the judge, not to them.</li>
+        <li><strong>The judge decides by “more likely than not”</strong> — your dated, specific facts and printed evidence are what carry weight.</li>
+        <li><strong>Free help:</strong> the court's Self-Help Centers and the Counsel for Justice DV Project (Stanley Mosk, Room 235) can help you prepare.</li>
+        <li><strong>Don't miss it.</strong> If you don't show up, the temporary order can end and your request can be dropped. Running late or unsafe to travel? Call the clerk as early as you can and say so.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3 style="font-size:21px;margin-bottom:6px">Practice script — telling the judge what happened</h3>
+    <p style="color:var(--ink2);margin-top:0">Judges listen for short, specific, dated sentences — one fact per sentence. The pattern is: <strong>date → place → what they did or said → what happened next.</strong></p>
+    <p style="color:var(--ink2)">Stick to what you saw and heard — exact words in quotes if you remember them. If you don't remember a date exactly, say “around” the date — don't guess under oath. If you get emotional, pause and breathe; judges expect it and will wait. Then read it out loud twice — that's the whole practice.</p>
+  </div>
+</section>
+
 <!-- ================= FREE HUMAN HELP ================= -->
 <section id="help" aria-labelledby="help-h">
   <div class="sec-head">
@@ -876,8 +1156,53 @@ header.hero h1{color:#f7ecd9}
   </div>
 </section>
 
+<!-- ================= LOS ANGELES: HELP & SOURCES ================= -->
+<section id="laHelp" aria-labelledby="lahelp-h" hidden>
+  <div class="sec-head">
+    <h2 id="lahelp-h">Free human help — Los Angeles County</h2>
+    <p>Every service below is free and confidential. Advocates can help with forms and safety planning; lawyers can advise you about your exact case.</p>
+  </div>
+  <div class="card">
+    <div class="resource"><span class="rname">If you are in danger right now</span><span class="rphone"><a href="tel:911">Call 911</a></span><p>Police can respond, verify an existing order, and arrest for a violation when they have probable cause.</p></div>
+    <div class="resource"><span class="rname">LA County Domestic Violence Hotline</span><span class="rphone"><a href="tel:+18009783600">(800) 978-3600</a></span><p>Free, confidential, 24/7. Safety planning, shelter, and referrals across Los Angeles County.</p></div>
+    <div class="resource"><span class="rname">Legal Aid Foundation of Los Angeles</span><span class="rphone"><a href="tel:+18003994529">1-800-399-4529</a></span><p>Free legal help, including restraining orders, for people who qualify.</p></div>
+    <div class="resource"><span class="rname">Counsel for Justice — Domestic Violence Project</span><span class="rphone" style="font-size:19px">Stanley Mosk Courthouse, Room 235</span><p>Free help preparing a DVRO request, at the courthouse: 111 N. Hill St., Los Angeles, CA 90012.</p></div>
+    <div class="resource"><span class="rname">Court Family Law Self-Help Centers</span><span class="rphone" style="font-size:19px">Stanley Mosk Room 426 + 7 more</span><p>Free walk-in help with forms: Stanley Mosk (Room 426), Van Nuys, Pasadena, Pomona, Santa Monica, Inglewood, Torrance, Compton.</p></div>
+    <div class="resource"><span class="rname">National Domestic Violence Hotline</span><span class="rphone"><a href="tel:+18007997233">1-800-799-7233</a></span><p>24/7, nationwide. Or text <strong>START</strong> to <strong>88788</strong>. Interpreters available.</p></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3 style="font-size:20px;margin-bottom:8px">Official sources used for Los Angeles</h3>
+    <ul class="plain" style="margin-bottom:0">
+      <li><a href="https://selfhelp.courts.ca.gov/DV-restraining-order" target="_blank" rel="noopener">California Courts — Domestic Violence Restraining Orders (self-help)</a></li>
+      <li><a href="https://www.lacourt.org" target="_blank" rel="noopener">Los Angeles Superior Court (lacourt.org)</a></li>
+      <li><a href="https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=FAM&amp;sectionNum=6345" target="_blank" rel="noopener">California Family Code § 6345 (duration and renewal)</a></li>
+      <li><a href="https://www.womenslaw.org/laws/ca/restraining-orders/domestic-violence-restraining-orders" target="_blank" rel="noopener">WomensLaw.org — California domestic violence restraining orders</a></li>
+    </ul>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3 style="font-size:21px;margin-bottom:6px">How each Los Angeles key fact was checked — November 5, 2026</h3>
+    <p style="color:var(--ink2);margin-top:0">Every key fact was checked against <strong>three kinds of sources</strong>: (1) <strong>California Courts</strong> self-help (courts.ca.gov), (2) the <strong>statute text</strong> (Family Code and Penal Code), and (3) a <strong>trusted legal-aid source</strong> — the Los Angeles Superior Court (lacourt.org), WomensLaw.org's California pages, and Legal Aid Foundation of Los Angeles. A fact is only shown as <strong>Confirmed</strong> when at least two official/trusted sources agree.</p>
+    <table class="map">
+      <thead><tr><th>Key fact</th><th>Checked against</th><th>Status · Nov 5, 2026</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Free to file</strong> — no filing fee for a DVRO, no fee to renew, sheriff serves free</td><td>California Courts · LA Superior Court · WomensLaw.org CA</td><td><strong>✓ Confirmed</strong> — 3 sources agree</td></tr>
+        <tr><td><strong>Form numbers</strong> — DV-100, DV-101, DV-109, DV-110, DV-200, DV-120, DV-130; renewal DV-700 + DV-710</td><td>California Courts forms · LA Superior Court · WomensLaw.org CA</td><td><strong>✓ Confirmed</strong> — 3 sources agree</td></tr>
+        <tr><td><strong>Same-day / 24-hour judge review</strong>; hearing within about 21–25 days; service at least 5 days before the hearing; you cannot serve it yourself</td><td>California Courts · Family Code §§ 240, 6320s · WomensLaw.org CA</td><td><strong>✓ Confirmed</strong> — 3 sources agree</td></tr>
+        <tr><td><strong>Duration</strong> — up to 5 years; 3 years if no expiration date is written</td><td>Family Code § 6345 (statute text) · California Courts · WomensLaw.org CA</td><td><strong>✓ Confirmed</strong> — 3 sources agree</td></tr>
+        <tr><td><strong>Renewal</strong> — file DV-700/DV-710 in the 3 months before expiration, before it lapses; no new abuse required; renewed order can be 5+ years or permanent; current order stays in effect until the renewal hearing</td><td>Family Code § 6345 · California Courts · WomensLaw.org CA</td><td><strong>✓ Confirmed</strong> — 3 sources agree</td></tr>
+        <tr><td><strong>Violation penalties</strong> — Penal Code § 273.6; first offense misdemeanor up to 1 year / $1,000; repeat within 7 years with violence or a credible threat can be a felony up to 3 years; arrest on probable cause (§ 836)</td><td>Penal Code §§ 273.6, 836 (statute text) · California Courts · WomensLaw.org CA</td><td><strong>✓ Confirmed</strong> — 3 sources agree</td></tr>
+        <tr><td><strong>Court &amp; help locations</strong> — Stanley Mosk Courthouse, 111 N. Hill St., LA 90012; Self-Help Center Room 426; Counsel for Justice DV Project Room 235; LA County DV Hotline (800) 978-3600; LAFLA 1-800-399-4529</td><td>LA Superior Court · LA County · Legal Aid Foundation of LA</td><td><strong>✓ Confirmed</strong> — 3 sources agree</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:14.5px;color:var(--muted);margin-bottom:0">Checked November 5, 2026. Laws and forms change — a “Confirmed” here means confirmed against the sources above on that date, not guaranteed forever. When in doubt, the clerk and Legal Aid win.</p>
+  </div>
+  <div class="notlawyer" role="note" style="max-width:none;margin-top:14px">
+    <strong>Please read this before you file.</strong> This page gives <em>general legal information</em> about California Domestic Violence Restraining Orders. It is <strong>not legal advice</strong>, it is <strong>not a lawyer</strong>, and using it does not create a lawyer–client relationship. Before you file, verify your forms and steps with the <strong>Los Angeles Superior Court clerk or Self-Help Center</strong> or a <strong>free legal aid lawyer or advocate</strong> (Legal Aid Foundation of Los Angeles — all free, listed above). If anything here conflicts with what the court tells you, follow the court.
+  </div>
+</section>
+
 <footer>
-  <p><strong>Order of Protection Helper — prototype for Monroe County, NY.</strong> This page gives legal information, not legal advice, and it is not a lawyer. It does not file anything, serve anything, or decide anything — only Monroe County Family Court can do that. Laws and court procedures change; confirm details with the court clerk or a free legal aid lawyer. If anything on this page conflicts with what the court tells you, follow the court.</p>
+  <p><strong>The Morales Report maker — Order of Protection Helper.</strong> This page gives legal information, not legal advice, and it is not a lawyer. It does not file anything, serve anything, or decide anything — only your court can do that. Laws and court procedures change; confirm details with the court clerk or a free legal aid lawyer. If anything on this page conflicts with what the court tells you, follow the court. Full local details are verified for Monroe County, NY and Los Angeles County, CA; other places get general guidance only — this page never guesses a place's law.</p>
   <p>Your answers are auto-saved only in this browser, on this device — not on a server, not shared with anyone, and not tracked. They stay saved on this device until you press “Clear my answers.” To move your work to another device, use “Download My Progress” in the Save &amp; Resume box and re-upload the file there. If this device isn't safe, erase your answers and tap “Quick exit.”</p>
 </footer>
 </div><!-- /wrap -->
@@ -901,7 +1226,7 @@ $("clearPageBtn").addEventListener("click", function(){
   var fields = document.querySelectorAll("input, select, textarea");
   for(var i=0;i<fields.length;i++){
     var f = fields[i];
-    if(f.id === "caseCourt"){ f.value = "Monroe County Family Court"; continue; }
+    if(f.id === "caseCourt"){ f.value = defaultCourt(); continue; }
     if(f.tagName === "SELECT"){ f.selectedIndex = 0; } else { f.value = ""; }
   }
   var tog = document.querySelectorAll(".toggle");
@@ -919,6 +1244,30 @@ $("clearPageBtn").addEventListener("click", function(){
 
 /* ---------- state ---------- */
 var state = { path: "first", packet: "first" };
+/* ---------- location state ---------- */
+var currentLoc = null; /* "ny" | "la" | "unverified" | null */
+var unverifiedText = "";
+var LOC_DEFS = {
+  ny: { label: "Monroe County, NY", court: "Monroe County Family Court",
+        keys: ["rochester","monroe","greece","henrietta","pittsford","webster","spencerport","brockport","fairport","irondequoit"] },
+  la: { label: "Los Angeles County, CA", court: "Los Angeles Superior Court",
+        keys: ["los angeles","van nuys","pasadena","pomona","santa monica","inglewood","torrance","compton","long beach","glendale ca","burbank","hollywood"] }
+};
+function isLA(){ return currentLoc === "la"; }
+function defaultCourt(){ return isLA() ? "Los Angeles Superior Court" : "Monroe County Family Court"; }
+function matchLocation(raw){
+  var q = " " + String(raw||"").toLowerCase().replace(/[^a-z0-9. ]+/g," ").replace(/\s+/g," ").trim() + " ";
+  var found = [];
+  for(var id in LOC_DEFS){
+    var keys = LOC_DEFS[id].keys;
+    for(var i=0;i<keys.length;i++){
+      var k = keys[i];
+      var hit = (k.length <= 3) ? (q.indexOf(" " + k + " ") !== -1 || q.indexOf(" " + k + ",") !== -1) : (q.indexOf(k) !== -1);
+      if(hit){ found.push(id); break; }
+    }
+  }
+  return found;
+}
 var PATH_TO_PACKET = { first:"first", extend:"extend", refile:"refile", violation:"violation" };
 
 /* ---------- path tabs ---------- */
@@ -1035,7 +1384,7 @@ function getIncidents(){
 /* ---------- case data (typed once, reused everywhere) ---------- */
 function getCase(){
   return {
-    fileNo: val("caseFileNo"), court: val("caseCourt") || "Monroe County Family Court",
+    fileNo: val("caseFileNo"), court: val("caseCourt") || defaultCourt(),
     judge: val("caseJudge"), orderType: val("caseOrderType"),
     issued: val("caseIssued"), expires: val("caseExpires"),
     myName: val("myName"), respName: val("respName"), relationship: val("relationship"),
@@ -1061,7 +1410,13 @@ function updateDeadline(){
   var expD = new Date(exp + "T12:00:00");
   var days = Math.round((expD - today) / 86400000);
   var txt;
-  if(days < 0){ txt = "<strong>Your order expired on " + esc(fmtDate(exp)) + " (" + Math.abs(days) + " days ago).</strong> An expired order can't be extended \u2014 your path is <strong>Re-file</strong> (a new Form 8-2). Switch to the Re-file path above and build that packet. Filing is still free."; }
+  if(isLA()){
+    if(days < 0){ txt = "<strong>Your order expired on " + esc(fmtDate(exp)) + " (" + Math.abs(days) + " days ago).</strong> An expired order can't be renewed \u2014 your path is <strong>Re-file</strong> (a brand-new DV-100 request). Filing is still free."; }
+    else if(days === 0){ txt = "<strong>Your order expires TODAY, " + esc(fmtDate(exp)) + ".</strong> If you want it renewed, file DV-700 + DV-710 today \u2014 in person is fastest. After today, your path becomes Re-file."; }
+    else if(days <= 90){ txt = "<strong>" + days + " days left</strong> on your order (expires " + esc(fmtDate(exp)) + "). You are in the renewal window: California lets you file DV-700 + DV-710 during the <strong>3 months before</strong> expiration. Build the renewal packet now and file before that date. Download the calendar reminders so the deadline can't sneak up on you."; }
+    else { txt = "<strong>" + days + " days left</strong> on your order (expires " + esc(fmtDate(exp)) + "). Renewal opens 3 months before that date \u2014 download the reminders now (90, 30, and 7 days before) so you can renew with no rush."; }
+  }
+  else if(days < 0){ txt = "<strong>Your order expired on " + esc(fmtDate(exp)) + " (" + Math.abs(days) + " days ago).</strong> An expired order can't be extended \u2014 your path is <strong>Re-file</strong> (a new Form 8-2). Switch to the Re-file path above and build that packet. Filing is still free."; }
   else if(days === 0){ txt = "<strong>Your order expires TODAY, " + esc(fmtDate(exp)) + ".</strong> If you want it extended, file the GF-10 motion today \u2014 in person is fastest. After today, your path becomes Re-file."; }
   else if(days <= 30){ txt = "<strong>" + days + " days left</strong> on your order (expires " + esc(fmtDate(exp)) + "). This is the window to extend: build the GF-10/GF-10a packet now and file it before that date. Download the calendar reminders so the deadline can't sneak up on you."; }
   else { txt = "<strong>" + days + " days left</strong> on your order (expires " + esc(fmtDate(exp)) + "). Plenty of time \u2014 but download the reminders now (30, 14, and 7 days before) so you can start the extension while there's no rush."; }
@@ -1073,11 +1428,11 @@ $("icsBtn").addEventListener("click", function(){
   var exp = val("caseExpires"); if(!exp){ return; }
   var c = getCase();
   var stamp = new Date().toISOString().replace(/[-:]/g,"").split(".")[0] + "Z";
-  var events = [[30,"Start your extension paperwork"],[14,"File your GF-10 extension motion"],[7,"Last week: confirm your extension is filed"]];
+  var events = isLA() ? [[90,"Renewal window opens: start your DV-700 renewal paperwork"],[30,"File your DV-700 + DV-710 renewal request"],[7,"Last week: confirm your renewal is filed"]] : [[30,"Start your extension paperwork"],[14,"File your GF-10 extension motion"],[7,"Last week: confirm your extension is filed"]];
   var ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Order of Protection Helper//EN\r\n";
   for(var i=0;i<events.length;i++){
     var d = addDays(exp, -events[i][0]);
-    ics += "BEGIN:VEVENT\r\nUID:oop-" + events[i][0] + "-" + (c.fileNo||"case").replace(/\s+/g,"") + "@helper\r\nDTSTAMP:" + stamp + "\r\nDTSTART:" + icsDate(d) + "\r\nSUMMARY:" + icsEscape(events[i][1] + " \u2014 order expires " + fmtDate(exp)) + "\r\nDESCRIPTION:" + icsEscape("Order of Protection" + (c.fileNo ? " (File/Docket No. " + c.fileNo + ")" : "") + " at " + c.court + " expires on " + fmtDate(exp) + ". Extension (GF-10/GF-10a) is free and must be filed before it expires.") + "\r\nBEGIN:VALARM\r\nTRIGGER:-PT1H\r\nACTION:DISPLAY\r\nEND:VALARM\r\nEND:VEVENT\r\n";
+    ics += "BEGIN:VEVENT\r\nUID:oop-" + events[i][0] + "-" + (c.fileNo||"case").replace(/\s+/g,"") + "@helper\r\nDTSTAMP:" + stamp + "\r\nDTSTART:" + icsDate(d) + "\r\nSUMMARY:" + icsEscape(events[i][1] + " \u2014 order expires " + fmtDate(exp)) + "\r\nDESCRIPTION:" + icsEscape((isLA() ? "Domestic Violence Restraining Order" : "Order of Protection") + (c.fileNo ? " (Case No. " + c.fileNo + ")" : "") + " at " + c.court + " expires on " + fmtDate(exp) + ". " + (isLA() ? "Renewal (DV-700/DV-710) is free and must be filed during the 3 months before it expires." : "Extension (GF-10/GF-10a) is free and must be filed before it expires.")) + "\r\nBEGIN:VALARM\r\nTRIGGER:-PT1H\r\nACTION:DISPLAY\r\nEND:VALARM\r\nEND:VEVENT\r\n";
   }
   ics += "END:VCALENDAR\r\n";
   downloadText(ics, "order-of-protection-reminders.ics", "text/calendar");
@@ -1111,15 +1466,25 @@ function copyText(text, statusEl, okMsg){
 }
 
 /* ---------- review screen ---------- */
-var PACKET_NAMES = {
-  first: "First filing packet \u2014 Family Offense Petition (Form 8-2 / GF-17)",
-  extend: "Extension packet \u2014 Notice of Motion (GF-10) + Affirmation (GF-10a)",
-  refile: "Re-filing packet \u2014 new Family Offense Petition (Form 8-2)",
-  violation: "Violation packet \u2014 Petition, Violation of Order of Protection (GF-8)"
-};
+function getPacketNames(){
+  if(isLA()){
+    return {
+      first: "First filing packet \u2014 Request for Domestic Violence Restraining Order (DV-100 + DV-101)",
+      extend: "Renewal packet \u2014 Request to Renew Restraining Order (DV-700) + Notice of Hearing (DV-710)",
+      refile: "Re-filing packet \u2014 new Request for DVRO (DV-100 + DV-101)",
+      violation: "Violation packet \u2014 police report + violation report to the court"
+    };
+  }
+  return {
+    first: "First filing packet \u2014 Family Offense Petition (Form 8-2 / GF-17)",
+    extend: "Extension packet \u2014 Notice of Motion (GF-10) + Affirmation (GF-10a)",
+    refile: "Re-filing packet \u2014 new Family Offense Petition (Form 8-2)",
+    violation: "Violation packet \u2014 Petition, Violation of Order of Protection (GF-8)"
+  };
+}
 function reviewRows(c){
   var rows = [
-    ["Packet", PACKET_NAMES[state.packet], "packetToggles"],
+    ["Packet", getPacketNames()[state.packet], "packetToggles"],
     ["File / docket number", c.fileNo || "(none yet \u2014 the court assigns one)", "caseFileNo"],
     ["Court", c.court, "caseCourt"],
     ["Judge / referee", c.judge || "(not known \u2014 fine)", "caseJudge"],
@@ -1162,10 +1527,10 @@ function headerBlock(c, title){
   var L = [];
   L.push("============================================================");
   L.push(title.toUpperCase());
-  L.push("Prepared worksheet \u2014 copy onto the official NY Courts form");
+  L.push(isLA() ? "Prepared worksheet \u2014 copy onto the official California Courts (Judicial Council) form" : "Prepared worksheet \u2014 copy onto the official NY Courts form");
   L.push("============================================================");
   L.push("Court:            " + c.court);
-  L.push("File/Docket No.:  " + (c.fileNo || "(court will assign)"));
+  L.push((isLA() ? "Case No.:         " : "File/Docket No.:  ") + (c.fileNo || "(court will assign)"));
   if(c.judge){ L.push("Judge/Referee:    " + c.judge); }
   L.push("Petitioner:       " + (c.myName || "______________________"));
   L.push("Respondent:       " + (c.respName || "______________________"));
@@ -1180,9 +1545,9 @@ function coverChecklist(c){
   L.push("COVER CHECKLIST \u2014 TAKE THIS PACKET TO COURT");
   L.push("------------------------------------------------------------");
   L.push("[ ] This worksheet, printed");
-  L.push("[ ] The official form (free at the courthouse / nycourts.gov), filled in from this worksheet");
+  L.push(isLA() ? "[ ] The official form (free at the courthouse / courts.ca.gov), filled in from this worksheet" : "[ ] The official form (free at the courthouse / nycourts.gov), filled in from this worksheet");
   L.push("[ ] Photo ID, if you have one");
-  if(c.orderType || state.packet !== "first"){ L.push("[ ] A copy of my current Order of Protection (File/Docket No. " + (c.fileNo || "___") + ")"); }
+  if(c.orderType || state.packet !== "first"){ L.push("[ ] A copy of my current " + (isLA() ? "Restraining Order (Case No. " : "Order of Protection (File/Docket No. ") + (c.fileNo || "___") + ")"); }
   L.push("[ ] Evidence: screenshots/texts (dates visible), photos, police report numbers, medical papers");
   L.push("[ ] Witness names and contact info, if any");
   L.push("[ ] A safe mailing address + phone for the court");
@@ -1211,12 +1576,82 @@ function incidentsBlock(c, filterKind){
 }
 function protectionsBlock(c){
   var L = [""];
-  L.push("PROTECTION ASKED FOR (Family Court Act \u00A7 842):");
+  L.push(isLA() ? "PROTECTION ASKED FOR (Family Code \u00A7 6320):" : "PROTECTION ASKED FOR (Family Court Act \u00A7 842):");
   if(!c.protections.length){ L.push("  (none selected \u2014 choose in Step 1d)"); }
   for(var i=0;i<c.protections.length;i++){ L.push("  - " + c.protections[i]); }
   return L;
 }
+function buildPacketTextLA(){
+  var c = getCase();
+  var L = [];
+  if(state.packet === "first"){
+    L = L.concat(headerBlock(c, "Request for Domestic Violence Restraining Order \u2014 DV-100 + Description of Abuse DV-101 (first filing)"));
+    L.push(""); L.push("Proceeding under the Domestic Violence Prevention Act (Family Code \u00A7\u00A7 6200 et seq.).");
+    L.push("Petitioner asks the Court for a Temporary Restraining Order (DV-110)");
+    L.push("today and, after a hearing, a Restraining Order After Hearing (DV-130).");
+    L.push(""); L.push("DESCRIPTION OF ABUSE (for DV-101):");
+    L = L.concat(incidentsBlock(c, null));
+    L = L.concat(protectionsBlock(c));
+  } else if(state.packet === "extend"){
+    L = L.concat(headerBlock(c, "Request to Renew Restraining Order \u2014 DV-700 + Notice of Hearing to Renew DV-710"));
+    L.push("");
+    L.push("EXISTING ORDER (DV-130):");
+    L.push("  Type:    " + (c.orderType || "______________________"));
+    L.push("  Issued:  " + (c.issued ? fmtDate(c.issued) : "______________________"));
+    L.push("  Expires: " + (c.expires ? fmtDate(c.expires) : "______________________"));
+    L.push("  Renewal requested: " + (c.extLength || "5 or more years, or permanently (judge decides)"));
+    L.push("");
+    L.push("RENEWAL (Family Code \u00A7 6345): filed during the 3 months BEFORE the");
+    L.push("order expires. No new abuse needs to be proven. The current order");
+    L.push("stays in effect until the renewal hearing.");
+    if(c.goodCause){ L.push(""); L.push("Why renewal is requested:"); L.push(c.goodCause); }
+    L.push("");
+    L.push("Relevant incidents / contact since the order was issued:");
+    L = L.concat(incidentsBlock(c, null));
+    L = L.concat(protectionsBlock(c));
+  } else if(state.packet === "refile"){
+    L = L.concat(headerBlock(c, "Request for Domestic Violence Restraining Order \u2014 DV-100 + DV-101 (re-filing after expiration)"));
+    L.push("");
+    L.push("PRIOR CASE: A restraining order was previously issued in this matter");
+    L.push("(Case No. " + (c.fileNo || "___") + ", issued " + (c.issued ? fmtDate(c.issued) : "___") + ", expired " + (c.expires ? fmtDate(c.expires) : "___") + ").");
+    L.push("An expired order cannot be renewed, so Petitioner files a NEW request");
+    L.push("based on the following recent incidents and ongoing threat, with the");
+    L.push("earlier history as background:");
+    L = L.concat(incidentsBlock(c, null));
+    if(c.goodCause){ L.push(""); L.push("Why protection is still needed:"); L.push(c.goodCause); }
+    L = L.concat(protectionsBlock(c));
+    L.push(""); L.push("Petitioner asks for a Temporary Restraining Order (DV-110) today and an order after hearing (DV-130).");
+  } else {
+    L = L.concat(headerBlock(c, "Violation report \u2014 restraining order violation (Penal Code \u00A7 273.6)"));
+    L.push("");
+    L.push("ORDER ALLEGEDLY VIOLATED:");
+    L.push("  Type:    " + (c.orderType || "______________________"));
+    L.push("  Issued:  " + (c.issued ? fmtDate(c.issued) : "______________________"));
+    L.push("  Expires: " + (c.expires ? fmtDate(c.expires) : "______________________"));
+    L.push("");
+    L.push("VIOLATION(S) \u2014 what the Respondent did that the order forbids.");
+    L.push("Knowingly violating the order is a crime (Penal Code \u00A7 273.6); police");
+    L.push("must arrest on probable cause (\u00A7 836). Call the police AND file this");
+    L.push("report with the court that issued the order:");
+    var viol = incidentsBlock(c, "Violation of my existing order");
+    if(viol.length === 1 && viol[0].indexOf("No incidents") === 0){
+      L.push("(Tip: in Step 1c, set the incident's \u201CKind\u201D to \u201CIt broke my existing court order.\u201D Showing all logged incidents below.)");
+      L = L.concat(incidentsBlock(c, null));
+    } else { L = L.concat(viol); }
+    L.push("");
+    L.push("Petitioner asks the Court to enforce the order and impose the");
+    L.push("consequences provided by law for a knowing violation.");
+  }
+  L.push("");
+  L.push("------------------------------------------------------------");
+  L.push("Sign the OFFICIAL form as the clerk directs. This worksheet was");
+  L.push("prepared with The Morales Report maker. It is legal information,");
+  L.push("not legal advice.");
+  L = L.concat(coverChecklist(c));
+  return L.join("\n");
+}
 function buildPacketText(){
+  if(isLA()){ return buildPacketTextLA(); }
   var c = getCase();
   var L = [];
   if(state.packet === "first"){
@@ -1282,7 +1717,11 @@ function buildPacketText(){
   return L.join("\n");
 }
 function buildEvidence(c){
-  var items = [
+  var items = isLA() ? [
+    "Photo ID",
+    "Copies of your request (DV-100/DV-101) and any Temporary Restraining Order (DV-110) — bring to every court date",
+    "Case number: " + (c.fileNo || "write it here once the court assigns it")
+  ] : [
     "Photo ID",
     "A copy of your petition and any Temporary Order (bring to every court date)",
     "File / docket number: " + (c.fileNo || "write it here once the court assigns it")
@@ -1321,9 +1760,33 @@ $("copyPacketBtn").addEventListener("click", function(){
 
 
 /* ---------- clerk's-office script (auto-filled) ---------- */
+function renderScriptLA(out, c){
+  var me = c.myName || "____ (your name)";
+  var L = [];
+  L.push("AT THE CLERK'S WINDOW (Stanley Mosk Courthouse, Family Law \u2014 or your LA County courthouse):");
+  L.push("");
+  if(state.packet === "extend"){
+    L.push("\u201CHi, I'm " + me + ". I'm here to file a Request to Renew my Domestic Violence Restraining Order, Form DV-700, with the Notice of Hearing, Form DV-710.\u201D");
+    L.push("\u201CMy case number is " + (c.fileNo || "____") + ". My order expires on " + (c.expires ? fmtDate(c.expires) : "____") + ", and I know renewal has to be filed before that date.\u201D");
+  } else if(state.packet === "violation"){
+    L.push("\u201CHi, I'm " + me + ". I'm here to file a violation report \u2014 the person broke my restraining order. My case number is " + (c.fileNo || "____") + ".\u201D");
+    L.push("\u201CI've also called the police. Is there anything else the court needs from me today?\u201D");
+  } else {
+    if(state.packet === "refile"){ L.push("\u201CHi, I'm " + me + ". I had a restraining order before \u2014 case number " + (c.fileNo || "____") + " \u2014 it expired, so I'm filing a new request.\u201D"); }
+    L.push("\u201CHi, I'm here to file a Request for a Domestic Violence Restraining Order, Form DV-100. I don't have a lawyer. I filled out my paperwork, can you check that it's complete? I'm asking for a temporary order today because I don't feel safe. When is my court date, and how will I find out? Who serves the papers?\u201D");
+  }
+  L.push("");
+  L.push("BEFORE YOU LEAVE, ASK:");
+  L.push("\u201CWhen is my court date, and can I get it in writing?\u201D");
+  L.push("\u201CWho serves the papers \u2014 can the sheriff do it for free? They must be served at least 5 days before the hearing, right?\u201D");
+  L.push("\u201CWhat should I bring to the hearing?\u201D");
+  L.push("\u201CIf something happens before the hearing, what number do I call? I know I can call 911.\u201D");
+  out.textContent = L.join("\n");
+}
 function renderScript(){
   var out = $("scriptOut"); if(!out){ return; }
   var c = getCase();
+  if(isLA()){ renderScriptLA(out, c); return; }
   var me = c.myName || "____ (your name)";
   var resp = c.respName || "____ (their name)";
   var L = [];
@@ -1389,7 +1852,7 @@ $("buildSpeechBtn").addEventListener("click", function(){
   var rel = c.relationship ? c.relationship.toLowerCase() : "the respondent";
   var first = c.incidents.length ? c.incidents[0] : null;
   var lines = [];
-  lines.push("\u201CYour Honor, my name is " + me + ". I'm asking for an order of protection against " + resp + " \u2014 " + rel + ".\u201D");
+  lines.push("\u201CYour Honor, my name is " + me + ". I'm asking for " + (isLA() ? "a Domestic Violence Restraining Order" : "an order of protection") + " against " + resp + " \u2014 " + rel + ".\u201D");
   if(first){
     lines.push("\u201COn " + (first.date ? fmtDate(first.date) : "____ (date)") + (first.place ? ", at " + first.place : "") + ", " + (first.what || "____ (say exactly what they did or said, in one or two short sentences)") + ".\u201D");
   } else {
@@ -1440,6 +1903,47 @@ var ANSWERS = [
 "<p><strong>Your New York order travels with you \u2014 it is enforceable in every state.</strong></p><p class='lawline'><strong>The law, simply:</strong> Federal law (the Violence Against Women Act, 18 U.S.C. \u00A7 2265) requires every state to enforce valid protection orders from other states \u2014 no re-filing needed just because you crossed a state line. Keeping a copy with you lets police in the new state verify it in the national registry.</p><ol><li>Keep a paper copy of the order on you and a photo of it on your phone.</li><li>After you move, you may file a copy with the local court or sheriff in your new state to make local enforcement faster (optional, usually free).</li><li>If it needs extending later, that still happens in the New York court that issued it \u2014 ask the clerk about appearing remotely.</li><li>Update your safe contact with the court so notices reach you.</li></ol><p><strong>Your next step:</strong> photograph your order (all pages) before you travel.</p>" }
 ];
 var FALLBACK = "<p><strong>That's a real question, and I want you to get an answer you can trust.</strong> I answer from the New York rules on this page, and your wording didn't match a topic I cover \u2014 try asking about: filing, cost, extending/renewing, an expired order, a violation, service, the hearing, evidence, children, or keeping your address safe. Or tap one of the questions above.</p><p class='lawline'><strong>Meanwhile, the basics:</strong> Family Court filing is free, you don't need a lawyer, and free humans who know your exact situation are at Willow (585-222-7233, 24/7) and Legal Aid (585-232-4090).</p><ol><li>If you're in danger now, call 911.</li><li>Re-ask your question using one of those topic words, or tap a suggested question.</li><li>Start your paperwork below (Step 1) \u2014 most questions answer themselves once your packet exists.</li><li>For advice about your exact facts, call Willow or Legal Aid \u2014 free and confidential.</li></ol><p><strong>Your next step:</strong> tap a suggested question above, or call Willow at 585-222-7233.</p>";
+var ANSWERS_LA = [
+{ k:["violat","broke the order","breaks the order","texted me","called me anyway","came to my house","showed up","won't stop contacting","ignoring the order"], a:
+"<p><strong>If they broke the order, call the police and tell the court \u2014 you can do both.</strong></p><p class='lawline'><strong>The law, simply:</strong> Knowingly breaking a restraining order is a crime (Penal Code \u00A7 273.6), even if nobody is touched \u2014 a forbidden text counts. Police must arrest when they have probable cause (\u00A7 836). A first offense is a misdemeanor (up to 1 year in county jail, $1,000 fine); a repeat within 7 years with violence or a credible threat can be a felony (up to 3 years).</p><ol><li>If it's happening now or you feel unsafe, call <strong>911</strong> and say: \u201CI have a restraining order and the person is violating it.\u201D</li><li>Screenshot everything with dates showing. Don't delete the thread.</li><li>Write it in the incident log below (Step 1c) while it's fresh \u2014 set the kind to \u201CIt broke my existing court order.\u201D</li><li>File a violation report with the Los Angeles Superior Court that issued your order.</li><li>Keep carrying a copy of the order with you.</li></ol><p><strong>Your next step:</strong> screenshot it, then log it. Two minutes, done now.</p>" },
+{ k:["renew","expir","extension","extend"], a:
+"<p><strong>Renewal has a hard deadline: file during the 3 months BEFORE your order expires \u2014 once it lapses, it cannot be renewed.</strong></p><p class='lawline'><strong>The law, simply:</strong> File form DV-700 (Request to Renew) + DV-710 (Notice of Hearing) under Family Code \u00A7 6345. You do <em>not</em> need to prove new abuse. A renewed order can last 5 or more years, or permanently, and your current order stays in effect until the renewal hearing. Cost: $0.</p><ol><li>Find the expiration date on your DV-130. Enter it in Step 1a below \u2014 the page counts your days left.</li><li>Build the <strong>Renewal packet (DV-700 + DV-710)</strong> in Step 2 and review it.</li><li>File it at Los Angeles Superior Court before the expiration date.</li><li>Have the papers served (sheriff serves free) and go to the renewal hearing.</li></ol><p><strong>Your next step:</strong> check the date on your order right now. Inside 3 months? Start Step 1a today.</p>" },
+{ k:["expired","ran out","lapsed","dismissed","start over","again"], a:
+"<p><strong>If the order already expired, you file fresh \u2014 a brand-new DV-100 \u2014 and it's still free.</strong></p><p class='lawline'><strong>The law, simply:</strong> An expired order can't be renewed, so you file a new Request for Domestic Violence Restraining Order (DV-100 + DV-101) under the Domestic Violence Prevention Act (Family Code \u00A7\u00A7 6200 et seq.). Lead with new incidents, new threats, or ongoing contact \u2014 and include the earlier history and the old order as background.</p><ol><li>Log anything new since the order ended in Step 1c \u2014 even one text counts.</li><li>Enter your old case number in Step 1a if you have it.</li><li>Build the <strong>Re-filing packet</strong> in Step 2 and review every line.</li><li>File at Los Angeles Superior Court and ask for a Temporary Restraining Order the same day if you need protection now.</li><li>Free sheriff service, then your hearing in about 21\u201325 days.</li></ol><p><strong>Your next step:</strong> log the most recent thing that happened. That entry is the heart of your re-filing.</p>" },
+{ k:["cost","fee","free","pay","afford","money","charge"], a:
+"<p><strong>It's free. A California domestic violence restraining order costs $0 to file and $0 to renew</strong> \u2014 no filing fee, no lawyer required, and the sheriff serves the papers for free.</p><ol><li>Don't let money stop you \u2014 pick your path at the top of this page.</li><li>Do the interview below (Step 1).</li><li>Build and print your packet (Steps 2\u20134).</li><li>File it at Stanley Mosk Courthouse or another LA County family-law courthouse \u2014 $0 at the window. Free help: the court's Self-Help Centers and \u201CFile At Home\u201D tool.</li></ol><p><strong>Your next step:</strong> start Step 1. The only cost is the trip or the printer paper.</p>" },
+{ k:["lawyer","attorney","represent","legal aid"], a:
+"<p><strong>You do not need a lawyer to file \u2014 but free legal help exists in Los Angeles.</strong></p><p class='lawline'><strong>Free help:</strong> Legal Aid Foundation of Los Angeles (1-800-399-4529); the Counsel for Justice Domestic Violence Project at Stanley Mosk Courthouse, Room 235 (free help preparing a DVRO request); the court's Family Law Self-Help Centers (Stanley Mosk Room 426, plus Van Nuys, Pasadena, Pomona, Santa Monica, Inglewood, Torrance, Compton); and the LA County DV Hotline, (800) 978-3600, 24/7.</p><ol><li>Keep prepping your packet here \u2014 a lawyer or advocate can use it immediately.</li><li>Call Legal Aid or visit a Self-Help Center before your hearing if you can.</li><li>Bring your packet and evidence to whoever helps you.</li></ol><p><strong>Your next step:</strong> call the LA County DV Hotline at (800) 978-3600 \u2014 free, confidential, 24/7.</p>" },
+{ k:["how do i file","how to file","start","get an order","get one","apply","first time","never filed","begin"], a:
+"<p><strong>Filing starts with one main form: DV-100. You can do this.</strong></p><p class='lawline'><strong>The law, simply:</strong> You file a Request for Domestic Violence Restraining Order (DV-100, plus DV-101 describing the abuse) under the Domestic Violence Prevention Act. It covers abuse by a spouse/ex, someone you live or lived with, a dating partner, your child's other parent, or a close relative. A judge reviews it typically the same day or within 24 hours and can grant a Temporary Restraining Order (DV-110) right away.</p><ol><li>Write what happened in the incident log (Step 1c below).</li><li>Finish the interview (Steps 1a\u20131d) and build the <strong>First filing packet</strong> in Step 2.</li><li>Review every answer (Step 3), then download/print the packet (Step 4).</li><li>File at Stanley Mosk Courthouse, 111 N. Hill St., Los Angeles (Family Law), or another LA County courthouse that handles family law \u2014 or start with the court's free \u201CFile At Home\u201D online interview.</li><li>Use the clerk's-office script on this page \u2014 it tells you exactly what to say.</li></ol><p><strong>Your next step:</strong> scroll to Step 1c and write the first incident.</p>" },
+{ k:["temporary","emergency","tonight","right now","today","immediate"], a:
+"<p><strong>Protection can start today \u2014 that's exactly what a Temporary Restraining Order is for.</strong></p><p class='lawline'><strong>The law, simply:</strong> A judge reviews a DVRO request typically the same day or within 24 hours and can grant a Temporary Restraining Order (DV-110) based on your papers alone, without the other person there. It lasts until your hearing, set within about 21 to 25 days, and it protects you once the other person has been served.</p><ol><li>If you are in danger right now: <strong>911 first</strong>, paperwork after.</li><li>Go to Stanley Mosk Courthouse (111 N. Hill St.) early in the day, or your nearest LA County family-law courthouse.</li><li>Say at the window: \u201CI'm here to file a Request for a Domestic Violence Restraining Order, Form DV-100, and I'm asking for a temporary order today because I don't feel safe.\u201D</li><li>Get your hearing date in writing and arrange free sheriff service \u2014 service must happen at least 5 days before the hearing.</li></ol><p><strong>Your next step:</strong> if it's business hours, go today. The script section tells you what to say.</p>" },
+{ k:["serv","deliver","papers handed","handed the papers","gets the papers"], a:
+"<p><strong>You cannot serve the papers yourself \u2014 and you don't have to. The sheriff does it free.</strong></p><p class='lawline'><strong>The law, simply:</strong> The other person must be hand-delivered the papers at least 5 days before the hearing, by someone 18 or older who is not part of the case, or by the sheriff (free). The server fills out form DV-200 (Proof of Personal Service). The order protects you once they've been served.</p><ol><li>When you file, ask the clerk: \u201CCan the sheriff serve the papers, and how will I know it happened?\u201D</li><li>Give the court the best address/workplace you have for them (Step 1b helps).</li><li>Make sure the completed DV-200 gets filed with the court before your hearing.</li><li>Keep your copy of the order with you; if they approach you before service, call 911.</li></ol><p><strong>Your next step:</strong> write down where they can be found, in Step 1b of the interview.</p>" },
+{ k:["hearing","court date","what happens in court","judge","testify","nervous","scared of court"], a:
+"<p><strong>The hearing is short and built for people without lawyers. The Hearing Prep section on this page walks you through it.</strong></p><p class='lawline'><strong>The law, simply:</strong> Your hearing is set within about 21 to 25 days of filing. Both sides testify under oath, and the judge decides by \u201Cmore likely than not.\u201D If the judge grants it, the order after hearing (DV-130) can last up to 5 years.</p><ol><li>Bring: photo ID, your case number, copies of DV-100/DV-101 and the DV-110, your dated timeline, printed evidence in date order, and witness names/phones.</li><li>Practice: date \u2192 place \u2192 what they did or said \u2192 what happened next. One fact per sentence.</li><li>Speak to the judge, not the other person. Never guess under oath \u2014 say \u201Caround\u201D a date if you're unsure.</li><li>Free prep help: Self-Help Centers and the Counsel for Justice DV Project (Stanley Mosk, Room 235).</li><li>Never just skip it \u2014 the temporary order can end if you don't appear.</li></ol><p><strong>Your next step:</strong> open the Hearing Prep tab and read the bring-list.</p>" },
+{ k:["evidence","proof","prove","photos","texts","messages","record","screenshot"], a:
+"<p><strong>Specific and dated beats long and emotional. Judges act on facts they can check.</strong></p><ol><li>Screenshot messages with the date and their name/number visible. Don't edit out context.</li><li>Photograph injuries and damage the same day; write the date on each printout.</li><li>Save voicemails and note every police report number.</li><li>Log each incident in Step 1c \u2014 this page turns your log into an evidence checklist when you build your packet.</li><li>Bring two printed copies of everything, organized oldest to newest.</li></ol><p><strong>Your next step:</strong> pick your strongest incident and make sure its evidence is saved in two places.</p>" },
+{ k:["child","kid","custody","visitation","school"], a:
+"<p><strong>Yes \u2014 a DVRO can protect your children too, and can include temporary custody and visitation orders.</strong></p><p class='lawline'><strong>The law, simply:</strong> On the DV-100 you can ask the judge to protect your children, order the other person to stay away from them and their school, and set safe custody/visitation and pickup rules while the order is in place.</p><ol><li>List the children (names/ages) in Step 1b of the interview.</li><li>In your incident log, note every incident the children saw, heard, or were part of.</li><li>In Step 1d, tap the protections about children, their school, and safe custody/visitation.</li><li>Give a copy of the final order (DV-130) to the children's school and childcare.</li><li>For help with custody questions, call Legal Aid Foundation of LA: 1-800-399-4529.</li></ol><p><strong>Your next step:</strong> add the children to Step 1b now, so they're in every form this page builds.</p>" },
+{ k:["how long","last","duration","years"], a:
+"<p><strong>An order granted after the hearing lasts up to 5 years \u2014 and 3 years if the judge writes no expiration date.</strong></p><p class='lawline'><strong>The law, simply:</strong> Family Code \u00A7 6345. A Temporary Restraining Order (DV-110) is short \u2014 it runs until your hearing (about 21\u201325 days). A renewed order can last 5 or more years, or permanently.</p><ol><li>Find the expiration date on your DV-130 and enter it in Step 1a below.</li><li>Download the calendar reminders this page builds.</li><li>Renew with DV-700 during the 3 months before that date \u2014 never after.</li></ol><p><strong>Your next step:</strong> check the date printed on your order today.</p>" },
+{ k:["move","another state","out of state","relocat","leave california"], a:
+"<p><strong>Your California order travels with you \u2014 it is enforceable in every state.</strong></p><p class='lawline'><strong>The law, simply:</strong> Federal law (the Violence Against Women Act, 18 U.S.C. \u00A7 2265) requires every state to enforce valid protection orders from other states \u2014 no re-filing needed just because you crossed a state line.</p><ol><li>Keep a paper copy of the order on you and a photo of it on your phone.</li><li>After you move, you may file a copy with the local court or sheriff in your new state to make enforcement faster (optional).</li><li>Renewals still happen in the California court that issued it \u2014 ask the clerk about your options.</li><li>Update your safe contact with the court so notices reach you.</li></ol><p><strong>Your next step:</strong> photograph your order (all pages) before you travel.</p>" }
+];
+var FALLBACK_LA = "<p><strong>That's a real question, and I want you to get an answer you can trust.</strong> I answer from the California rules on this page, and your wording didn't match a topic I cover \u2014 try asking about: filing, cost, renewing, an expired order, a violation, service, the hearing, evidence, children, or how long an order lasts. Or tap one of the questions above.</p><p class='lawline'><strong>Meanwhile, the basics:</strong> Filing a DVRO in California is free, you don't need a lawyer, the sheriff serves the papers free, and free humans who know your exact situation are at the LA County DV Hotline ((800) 978-3600, 24/7) and Legal Aid Foundation of LA (1-800-399-4529).</p><ol><li>If you're in danger now, call 911.</li><li>Re-ask your question using one of those topic words, or tap a suggested question.</li><li>Start your paperwork below (Step 1).</li><li>For advice about your exact facts, call the hotline or Legal Aid \u2014 free and confidential.</li></ol><p><strong>Your next step:</strong> tap a suggested question above, or call (800) 978-3600.</p>";
+var SUGGESTED_LA = [
+  "What do I do if he violates the order?",
+  "How do I renew my order before it expires?",
+  "My order already expired \u2014 what now?",
+  "Is it really free? I can't afford a lawyer.",
+  "How do I file for the first time?",
+  "I need protection today \u2014 what do I do?",
+  "What happens at the hearing?",
+  "Can the order protect my kids too?",
+  "Who serves the papers?",
+  "How long does the order last?"
+];
 function addMsg(cls, who, html){
   var log = $("chatLog");
   var div = document.createElement("div");
@@ -1450,12 +1954,14 @@ function addMsg(cls, who, html){
   return div;
 }
 function addBotMsg(html){ return addMsg("bot", "Helper", html); }
+function activeAnswers(){ return isLA() ? ANSWERS_LA : ANSWERS; }
 function scoreAnswer(q){
+  var set = activeAnswers();
   var best = null, bestScore = 0;
-  for(var i=0;i<ANSWERS.length;i++){
+  for(var i=0;i<set.length;i++){
     var s = 0;
-    for(var j=0;j<ANSWERS[i].k.length;j++){ if(q.indexOf(ANSWERS[i].k[j]) !== -1){ s += ANSWERS[i].k[j].length; } }
-    if(s > bestScore){ bestScore = s; best = ANSWERS[i]; }
+    for(var j=0;j<set[i].k.length;j++){ if(q.indexOf(set[i].k[j]) !== -1){ s += set[i].k[j].length; } }
+    if(s > bestScore){ bestScore = s; best = set[i]; }
   }
   return bestScore > 0 ? best : null;
 }
@@ -1464,7 +1970,21 @@ function askQuestion(raw){
   if(!q){ return; }
   addMsg("user", "You", esc(q));
   var match = scoreAnswer(q.toLowerCase());
-  addBotMsg(match ? match.a : FALLBACK);
+  addBotMsg(match ? match.a : (isLA() ? FALLBACK_LA : FALLBACK));
+}
+function buildChips(){
+  var row = $("chipRow"); if(!row){ return; }
+  var olds = row.querySelectorAll(".chip");
+  for(var i=olds.length-1;i>=0;i--){ olds[i].parentNode.removeChild(olds[i]); }
+  var list = isLA() ? SUGGESTED_LA : SUGGESTED;
+  for(var s=0;s<list.length;s++){
+    (function(text){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = text;
+      b.addEventListener("click", function(){ askQuestion(text); });
+      row.appendChild(b);
+    })(list[s]);
+  }
 }
 var SUGGESTED = [
   "What do I do if he violates the order?",
@@ -1478,15 +1998,7 @@ var SUGGESTED = [
   "How will he get the papers?",
   "Can I keep my address secret from him?"
 ];
-var chipRow = $("chipRow");
-for(var s=0;s<SUGGESTED.length;s++){
-  (function(text){
-    var b = document.createElement("button");
-    b.type = "button"; b.className = "chip"; b.textContent = text;
-    b.addEventListener("click", function(){ askQuestion(text); });
-    chipRow.appendChild(b);
-  })(SUGGESTED[s]);
-}
+buildChips();
 $("askForm").addEventListener("submit", function(e){
   e.preventDefault();
   askQuestion($("askInput").value);
@@ -1506,7 +2018,7 @@ function saveProgress(){
   if(restoring || !storageOK()){ return; }
   try {
     var c = getCase();
-    var payload = { v: 1, savedAt: new Date().toISOString(), path: state.path, packet: state.packet, caseData: c };
+    var payload = { v: 1, savedAt: new Date().toISOString(), path: state.path, packet: state.packet, caseData: c, location: currentLoc, unverifiedText: unverifiedText };
     window.localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
     var ls = $("lastSaved");
     if(ls && hasContent(c)){ ls.textContent = "Last saved on this device: " + new Date().toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit" }) + "."; }
@@ -1536,7 +2048,8 @@ function applyProgress(payload){
   if(!payload || !payload.caseData){ return false; }
   var c = payload.caseData;
   restoring = true;
-  setField("caseFileNo", c.fileNo); setField("caseCourt", c.court || "Monroe County Family Court");
+  if(payload.location){ applyLocation(payload.location, payload.unverifiedText || "", true); }
+  setField("caseFileNo", c.fileNo); setField("caseCourt", c.court || defaultCourt());
   setField("caseJudge", c.judge); setField("caseOrderType", c.orderType);
   setField("caseIssued", c.issued); setField("caseExpires", c.expires);
   setField("myName", c.myName); setField("respName", c.respName);
@@ -1567,16 +2080,26 @@ $("clearPageBtn").addEventListener("click", function(){ eraseSaved(); var ss = $
 $("clearAnswersBtn").addEventListener("click", function(){
   eraseSaved();
   $("clearPageBtn").click();
+  currentLoc = null; unverifiedText = "";
+  setText("locBarText", "Your location: not chosen yet \u2014 type it below so you get the right law for where you are.");
+  var fb2 = $("fallbackPanel"); if(fb2){ fb2.hidden = true; }
+  var tb2 = $("mainTabbar"); if(tb2){ tb2.hidden = true; }
+  var li = $("locInput"); if(li){ li.value = ""; }
+  renderLocSuggestions();
+  showSectionsFor("start");
   $("saveStatus").textContent = "Erased. Every answer saved on this device is gone. The page is blank, like the first visit.";
 });
 $("wbErase").addEventListener("click", function(){ $("clearAnswersBtn").click(); });
 $("wbContinue").addEventListener("click", function(){
   $("welcomeBack").hidden = true;
+  if(currentLoc === "unverified"){ $("fallbackPanel").scrollIntoView({ behavior:"smooth", block:"start" }); return; }
+  if(!currentLoc){ $("locationPicker").scrollIntoView({ behavior:"smooth", block:"start" }); return; }
+  activateTab("mycase");
   $("worksheet").scrollIntoView({ behavior:"smooth", block:"start" });
 });
 $("downloadProgressBtn").addEventListener("click", function(){
   var c = getCase();
-  var payload = { v: 1, savedAt: new Date().toISOString(), path: state.path, packet: state.packet, caseData: c };
+  var payload = { v: 1, savedAt: new Date().toISOString(), path: state.path, packet: state.packet, caseData: c, location: currentLoc, unverifiedText: unverifiedText };
   downloadText(JSON.stringify(payload, null, 2), "my-order-of-protection-progress.json", "application/json");
   $("saveStatus").textContent = "Progress file downloaded. Keep it somewhere safe and private \u2014 it contains everything you typed. Re-upload it here, on any device, to pick up where you left off.";
 });
@@ -1602,6 +2125,119 @@ $("progressFile").addEventListener("change", function(){
   this.value = "";
 });
 
+/* ---------- location: apply, picker, fallback ---------- */
+function setText(id, txt){ var el = $(id); if(el){ el.textContent = txt; } }
+function setHTML(id, html){ var el = $(id); if(el){ el.innerHTML = html; } }
+function applyLocation(loc, typed, silent){
+  currentLoc = loc;
+  if(loc === "unverified"){ unverifiedText = typed || unverifiedText || ""; }
+  var fb = $("fallbackPanel");
+  if(loc === "unverified"){
+    setText("locBarText", "Your location: " + (unverifiedText || "the place you typed") + " \u2014 not yet verified");
+    setText("fallbackTitle", "We haven't checked the law for " + (unverifiedText || "that place") + " yet, so we won't guess.");
+    setText("heroEyebrow", "General information \u2014 your place isn't verified yet");
+    setHTML("heroLede", "We haven't verified the law for <strong>" + esc(unverifiedText || "your place") + "</strong> yet, so this page won't guess at it. Below is the general process that holds almost everywhere, plus free national help and how to find your exact local forms.");
+    setText("heroSubtitle", "Order of Protection Helper \u2014 general steps for places we haven't verified yet");
+    if(fb){ fb.hidden = false; }
+    var tb0 = $("mainTabbar"); if(tb0){ tb0.hidden = true; }
+    showSectionsFor("start");
+    if(!silent){ var p = $("locationPicker"); if(p){ p.scrollIntoView({ behavior:"smooth", block:"start" }); } }
+    scheduleSave();
+    return;
+  }
+  if(fb){ fb.hidden = true; }
+  var tb = $("mainTabbar"); if(tb){ tb.hidden = false; }
+  if(loc === "la"){
+    setText("locBarText", "Your location: Los Angeles County, CA");
+    setText("heroEyebrow", "Los Angeles County \u00B7 California Superior Court");
+    setText("heroSubtitle", "Domestic Violence Restraining Order Helper \u2014 file, renew, and re-file in California");
+    setHTML("heroLede", "In California it's called a <strong>Domestic Violence Restraining Order (DVRO)</strong>. This page helps you file one, renew one, or report a violation. Plain words. Short steps. No lawyer needed. No fee.");
+    setHTML("safetyNote", "In immediate danger? Call <a href=\"tel:911\">911</a> \u00B7 LA County DV Hotline (free, 24/7): <a href=\"tel:+18009783600\">(800) 978-3600</a>");
+    setHTML("freeBannerText", "Filing a domestic violence restraining order in California costs <strong>$0</strong> \u2014 no filing fee, no fee to renew, and the sheriff serves the papers for free. You do <strong>not</strong> need a lawyer. Free help filling out the forms: the court's <strong>Self-Help Centers</strong> and the free <strong>\u201CFile At Home\u201D</strong> online tool.");
+    setText("freeBannerCheck", "\u2713 Checked Nov 5, 2026 \u2014 California Courts (courts.ca.gov) \u00B7 LA Superior Court (lacourt.org) \u00B7 WomensLaw.org California agree. Full check table in Help & Sources.");
+    setText("askIntro", "Type what you're wondering in your own words \u2014 like \u201Cwhat do I do if he texts me anyway?\u201D Every answer explains the law simply and ends with numbered steps you can actually take. Answers come from the California rules covered on this page; for advice about your exact situation, use the free help at the bottom.");
+    setHTML("worksheetIntro", "Five steps: <strong>1)</strong> answer a short interview, <strong>2)</strong> this page fills your paperwork packet from your answers and your case number, <strong>3)</strong> you review and fix every answer, <strong>4)</strong> you download or print the packet with its cover checklist, <strong>5)</strong> you file it using the Los Angeles steps right below the packet. Your case details are typed once and reused in every form \u2014 your case number flows into the DV-100, the DV-700 renewal, and the DV-130 drafts.");
+    setText("relHint", "Family Code \u00A7 6211 \u2014 this is why the court can hear your case: spouse/ex, cohabitant, dating partner, your child's other parent, or a close relative.");
+    setText("protLabel", "Tap everything you're asking the judge for (DV-100 requests / Family Code \u00A7 6320 orders)");
+    setText("extLabel", "Renewal only: how long are you asking for?");
+    setText("extOpt5", "5 or more years, or permanently (judge decides)");
+    setText("gcLabel", "Renewal / re-file: why do you still need protection? (No new abuse needs to be proven for a renewal.)");
+    setHTML("packetCardIntro", "The packet starts with a <strong>cover checklist</strong> (what's inside, what to bring, what to sign), then the filled draft. <strong>Important:</strong> courts want the official blank forms \u2014 copy your draft onto the official DV-100 / DV-700 forms (free at the courthouse or from California Courts online), or bring this printout and let the clerk or a Self-Help Center help you transfer it.");
+    var autoLi = document.querySelectorAll("#automate .card ul.plain li");
+    if(autoLi.length > 1){ autoLi[1].innerHTML = "<strong>Auto-filled draft forms</strong> \u2014 your case number, court, expiration date, and the other person's name flow into a DV-100/DV-101 draft, a DV-700/DV-710 renewal draft, a re-filing draft, and a violation report draft."; }
+    var courtEl = $("caseCourt");
+    if(courtEl && (!courtEl.value || courtEl.value === "Monroe County Family Court")){ courtEl.value = "Los Angeles Superior Court"; }
+    var cfLabel = document.querySelector("label[for='caseFileNo']");
+    if(cfLabel){ cfLabel.textContent = "Case number (if you already have a case)"; }
+  } else if(loc === "ny"){
+    setText("locBarText", "Your location: Monroe County, NY");
+    setText("heroEyebrow", "Monroe County \u00B7 New York Family Court");
+    setText("heroSubtitle", "Order of Protection Helper \u2014 file, renew, and re-file in New York");
+    setHTML("heroLede", "In New York it's called an <strong>Order of Protection</strong>. This page helps you file one, renew one, or report a violation. Plain words. Short steps. No lawyer needed. No fee.");
+    setHTML("safetyNote", "In immediate danger? Call <a href=\"tel:911\">911</a> \u00B7 Willow (free, 24/7, Rochester): <a href=\"tel:+15852227233\">585-222-7233</a>");
+    setHTML("freeBannerText", "Filing, extending, re-filing, and reporting a violation in <strong>Family Court costs $0</strong>. No filing fee. You do <strong>not</strong> need a lawyer. If you can't afford one, you can <strong>ask the judge to assign you one for free</strong>. (Divorce and other <em>Supreme Court</em> civil cases are a different court and can have fees \u2014 Family Court is free.)");
+    setText("freeBannerCheck", "\u2713 Checked Nov 5, 2026 \u2014 NY Courts (nycourts.gov) \u00B7 WomensLaw.org \u00B7 Legal Aid sources agree. One caution about online-filing fees is flagged in Help & Sources.");
+    setText("askIntro", "Type what you're wondering in your own words \u2014 like \u201Cwhat do I do if he texts me anyway?\u201D Every answer explains the law simply and ends with numbered steps you can actually take. Answers come from the New York rules covered on this page; for advice about your exact situation, use the free help at the bottom.");
+    setHTML("worksheetIntro", "Five steps: <strong>1)</strong> answer a short interview, <strong>2)</strong> this page fills your paperwork packet from your answers and your file number, <strong>3)</strong> you review and fix every answer, <strong>4)</strong> you download or print the packet with its cover checklist, <strong>5)</strong> you file it using the Monroe County steps right below the packet. Your case details are typed once and reused in every form.");
+    setText("relHint", "Family Court Act \u00A7 812 \u2014 this is why Family Court can hear your case.");
+    setText("protLabel", "Tap everything you're asking the judge for (Form 8-2 \u201Crelief\u201D / \u00A7 842 conditions)");
+    setText("extLabel", "Extension only: how long are you asking for?");
+    setText("extOpt5", "Up to 5 years (serious/aggravating circumstances)");
+    setText("gcLabel", "Extension / re-file: why do you still need protection? (\u201Cgood cause\u201D)");
+    setHTML("packetCardIntro", "The packet starts with a <strong>cover checklist</strong> (what's inside, what to bring, what to sign), then the filled draft. <strong>Important:</strong> courts want the official blank forms \u2014 copy your draft onto the official Form 8-2 / GF-10 / GF-8 (free at the courthouse or from NY Courts online), or bring this printout and let the clerk help you transfer it. Never sign a sworn form until the clerk or notary tells you to.");
+    var autoLi2 = document.querySelectorAll("#automate .card ul.plain li");
+    if(autoLi2.length > 1){ autoLi2[1].innerHTML = "<strong>Auto-filled draft forms</strong> \u2014 your file/docket number, court, judge, expiration date, and the other person's name flow into a Form 8-2 draft, a GF-10/GF-10a extension draft, a re-filing draft, and a GF-8 violation draft."; }
+    var cfLabel2 = document.querySelector("label[for='caseFileNo']");
+    if(cfLabel2){ cfLabel2.textContent = "File / docket number (if you already have a case)"; }
+    var courtEl2 = $("caseCourt");
+    if(courtEl2 && (!courtEl2.value || courtEl2.value === "Los Angeles Superior Court")){ courtEl2.value = "Monroe County Family Court"; }
+  }
+  var pktLabels = isLA() ? ["First filing \u2014 DV-100 + DV-101 request","Renewal \u2014 DV-700 + DV-710","Re-filing \u2014 new DV-100","Violation \u2014 police + court report"] : ["First filing \u2014 Form 8-2 / GF-17 petition","Extension \u2014 GF-10 + GF-10a","Re-filing \u2014 new Form 8-2","Violation \u2014 GF-8"];
+  for(var pk=0; pk<packetBtns.length && pk<pktLabels.length; pk++){ packetBtns[pk].textContent = pktLabels[pk]; }
+  buildChips();
+  var log = $("chatLog");
+  if(log && !silent){ log.innerHTML = ""; addBotMsg(isLA() ? "<p>Hi. You're set for <strong>Los Angeles County, California</strong>. You can ask me things like how to file a DVRO, how to renew an order that's about to expire, or what to do if the other person breaks the order. Tap a question below or type your own.</p><p><strong>Remember:</strong> if you are in danger right now, call <strong>911</strong> first.</p>" : "<p>Hi. You're set for <strong>Monroe County, New York</strong>. You can ask me things like how to file, how to renew an order that's about to expire, or what to do if the other person breaks the order. Tap a question below or type your own.</p><p><strong>Remember:</strong> if you are in danger right now, call <strong>911</strong> first.</p>"); }
+  updateDeadline(); renderReview(); renderScript();
+  showSectionsFor(currentTab);
+  scheduleSave();
+}
+function renderLocSuggestions(){
+  var box = $("locSuggestions"); if(!box){ return; }
+  var raw = $("locInput").value;
+  box.innerHTML = "";
+  if(!raw.trim()){ return; }
+  var found = matchLocation(raw);
+  for(var i=0;i<found.length;i++){
+    (function(id){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "suggestbtn";
+      b.innerHTML = (id === "la" ? "Los Angeles County, California" : "Monroe County, New York") + "<small>" + (id === "la" ? "Verified \u2014 full local walkthrough: DVRO forms, Stanley Mosk Courthouse, renewal and violation rules." : "Verified \u2014 full local walkthrough: Order of Protection forms, Monroe County Family Court, extension and violation rules.") + "</small>";
+      b.addEventListener("click", function(){ applyLocation(id, "", false); window.scrollTo({ top: 0, behavior: "smooth" }); });
+      box.appendChild(b);
+    })(found[i]);
+  }
+}
+$("locInput").addEventListener("input", renderLocSuggestions);
+$("locInput").addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); $("locGoBtn").click(); } });
+$("locGoBtn").addEventListener("click", function(){
+  var raw = $("locInput").value.trim();
+  if(!raw){ $("locInput").focus(); return; }
+  var found = matchLocation(raw);
+  if(found.length === 1){ applyLocation(found[0], "", false); }
+  else if(found.length > 1){ renderLocSuggestions(); }
+  else { applyLocation("unverified", raw, false); }
+});
+var pickBtns = document.querySelectorAll("[data-locpick]");
+for(var pb=0; pb<pickBtns.length; pb++){
+  pickBtns[pb].addEventListener("click", function(){ applyLocation(this.getAttribute("data-locpick"), "", false); window.scrollTo({ top: 0, behavior: "smooth" }); });
+}
+$("changeLocBtn").addEventListener("click", function(){
+  activateTab("start");
+  var p = $("locationPicker");
+  if(p){ p.scrollIntoView({ behavior:"smooth", block:"start" }); }
+  setTimeout(function(){ try{ $("locInput").focus({ preventScroll:true }); }catch(e){} }, 400);
+});
+
 /* ---------- main tabs: one calm screen at a time ---------- */
 var TAB_GROUPS = {
   start: [],
@@ -1612,10 +2248,17 @@ var TAB_GROUPS = {
   mycase: ["worksheet","automate"],
   help: ["law","help","sources"]
 };
-var ALL_SECTION_IDS = ["ask","paths","law","automate","worksheet","scripts","file","after","hearing","help","sources"];
+var LA_SWAP = { paths:"laPaths", law:"laLaw", file:"laFile", after:"laAfter", hearing:"laHearing", help:"laHelp", sources:"laHelp" };
+var ALL_SECTION_IDS = ["ask","paths","law","automate","worksheet","scripts","file","after","hearing","help","sources","laPaths","laLaw","laFile","laAfter","laHearing","laHelp"];
 var currentTab = "start";
 function showSectionsFor(tab){
-  var group = TAB_GROUPS[tab] || [];
+  if(currentLoc === "unverified" || !currentLoc){
+    for(var u=0;u<ALL_SECTION_IDS.length;u++){ var uel = $(ALL_SECTION_IDS[u]); if(uel){ uel.hidden = true; } }
+    return;
+  }
+  var base = TAB_GROUPS[tab] || [];
+  var group = [];
+  for(var g=0; g<base.length; g++){ group.push(isLA() && LA_SWAP[base[g]] ? LA_SWAP[base[g]] : base[g]); }
   for(var i=0;i<ALL_SECTION_IDS.length;i++){
     var el = $(ALL_SECTION_IDS[i]);
     if(el){ el.hidden = group.indexOf(ALL_SECTION_IDS[i]) === -1; }
@@ -1638,26 +2281,38 @@ for(var mt=0; mt<mainTabBtns.length; mt++){
   });
 }
 $("startBtn").addEventListener("click", function(){
+  if(!currentLoc || currentLoc === "unverified"){ $("locationPicker").scrollIntoView({ behavior:"smooth", block:"start" }); try{ $("locInput").focus({ preventScroll:true }); }catch(e){} return; }
   activateTab("file");
-  $("paths").scrollIntoView({ behavior:"smooth", block:"start" });
+  $(isLA() ? "laPaths" : "paths").scrollIntoView({ behavior:"smooth", block:"start" });
 });
-var quickBtns = document.querySelectorAll(".quickbtn");
+var quickBtns = document.querySelectorAll(".quickbtn[data-goto]");
 for(var qb=0; qb<quickBtns.length; qb++){
   quickBtns[qb].addEventListener("click", function(){
+    if(!currentLoc || currentLoc === "unverified"){ $("locationPicker").scrollIntoView({ behavior:"smooth", block:"start" }); return; }
     var tab = this.getAttribute("data-goto");
     activateTab(tab, this.getAttribute("data-path") || undefined);
-    var target = $(TAB_GROUPS[tab] && TAB_GROUPS[tab][0] ? TAB_GROUPS[tab][0] : "paths");
+    var firstId = TAB_GROUPS[tab] && TAB_GROUPS[tab][0] ? TAB_GROUPS[tab][0] : "paths";
+    if(isLA() && LA_SWAP[firstId]){ firstId = LA_SWAP[firstId]; }
+    var target = $(firstId);
     if(target){ target.scrollIntoView({ behavior:"smooth", block:"start" }); }
   });
 }
 window.addEventListener("beforeprint", function(){
-  for(var i=0;i<ALL_SECTION_IDS.length;i++){ var el = $(ALL_SECTION_IDS[i]); if(el){ el.hidden = false; } }
+  var laIds = ["laPaths","laLaw","laFile","laAfter","laHearing","laHelp"];
+  var nyIds = ["paths","law","file","after","hearing","help","sources"];
+  for(var i=0;i<ALL_SECTION_IDS.length;i++){
+    var el = $(ALL_SECTION_IDS[i]); if(!el){ continue; }
+    if(isLA() && nyIds.indexOf(ALL_SECTION_IDS[i]) !== -1){ el.hidden = true; continue; }
+    if(!isLA() && laIds.indexOf(ALL_SECTION_IDS[i]) !== -1){ el.hidden = true; continue; }
+    el.hidden = false;
+  }
 });
 window.addEventListener("afterprint", function(){ showSectionsFor(currentTab); });
 
 /* ---------- init ---------- */
 resetIncidents();
 var savedAtLoad = loadSaved();
+if(savedAtLoad && savedAtLoad.location){ applyLocation(savedAtLoad.location, savedAtLoad.unverifiedText || "", true); if(savedAtLoad.location === "unverified"){ var liEl = $("locInput"); if(liEl){ liEl.value = savedAtLoad.unverifiedText || ""; } } }
 if(savedAtLoad && savedAtLoad.caseData && applyProgress(savedAtLoad)){
   var wb = $("welcomeBack");
   wb.hidden = false;
