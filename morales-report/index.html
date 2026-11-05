@@ -1,0 +1,1678 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark" />
+<link rel="icon" href="data:," />
+<title>The Morales Report maker — Order of Protection Helper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f4f2ee; --bg2:#eceae4; --surface:#ffffff; --surface2:#faf9f6;
+  --ink:#22241f; --ink2:#45473f; --muted:#6d6f66;
+  --line:#d8d4c9; --line-strong:#b9b4a4;
+  --accent:#0e5a50; --accent-ink:#ffffff; --accent-soft:#e2efec;
+  --free-bg:#e6f2e4; --free-line:#9dc493; --free-ink:#1e4d1a;
+  --warn-bg:#fdf3e0; --warn-line:#e3c98a; --warn-ink:#5c4303;
+  --danger:#a52a21; --danger-ink:#ffffff;
+  --law-bg:#eef0ea; --chip-bg:#ffffff;
+  --shadow:0 1px 2px rgba(30,30,20,.06),0 8px 24px -18px rgba(30,30,20,.35);
+  --radius:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#171815; --bg2:#1e1f1c; --surface:#23241f; --surface2:#1c1d1a;
+    --ink:#ecebe4; --ink2:#c9c8bd; --muted:#9d9e93;
+    --line:#3a3b34; --line-strong:#55564c;
+    --accent:#58b3a2; --accent-ink:#0b2420; --accent-soft:#22332e;
+    --free-bg:#1d2f1b; --free-line:#4d7047; --free-ink:#bfe3b8;
+    --warn-bg:#332a14; --warn-line:#6d5a26; --warn-ink:#f0d48a;
+    --danger:#d0554a; --danger-ink:#ffffff;
+    --law-bg:#26271f; --chip-bg:#2a2b26;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -18px rgba(0,0,0,.8);
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{animation:none!important; transition:none!important} }
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Newsreader",Georgia,serif;line-height:1.15;margin:0;font-weight:600}
+a{color:var(--accent);text-underline-offset:2px}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1060px;margin:0 auto;padding:0 18px}
+
+/* ---------- safety bar ---------- */
+.safetybar{position:sticky;top:0;z-index:60;background:var(--ink);color:#f2f1ea}
+.safetybar .wrap{display:flex;align-items:center;gap:10px;padding-top:8px;padding-bottom:8px;flex-wrap:wrap}
+.safetybar .danger-note{font-size:14px;font-weight:600}
+.safetybar .danger-note a{color:#ffd9a8;font-weight:800}
+.safetybar .spacer{flex:1}
+.btn-exit{background:var(--danger);color:var(--danger-ink);border:0;border-radius:8px;padding:9px 16px;font-weight:800;font-size:15px;letter-spacing:.01em}
+.btn-exit:hover{filter:brightness(1.12)}
+.btn-clearpage{background:transparent;color:#f2f1ea;border:1px solid rgba(255,255,255,.45);border-radius:8px;padding:8px 12px;font-size:14px;font-weight:600}
+
+/* ---------- header ---------- */
+header.hero{padding:34px 0 8px}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+header.hero h1{font-size:clamp(32px,5.2vw,50px);margin:8px 0 10px;max-width:20ch}
+.lede{font-size:19px;color:var(--ink2);max-width:62ch;margin:0 0 14px}
+.notlawyer{background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-ink);border-radius:10px;padding:12px 16px;font-size:15px;max-width:760px}
+.notlawyer strong{font-weight:800}
+.privacy-note{font-size:14.5px;color:var(--muted);margin:12px 0 0;max-width:760px}
+
+/* ---------- free banner ---------- */
+.free-banner{background:var(--free-bg);border:1.5px solid var(--free-line);border-radius:var(--radius);padding:18px 20px;margin:22px 0;display:flex;gap:16px;align-items:flex-start}
+.free-banner .big{font-family:"Newsreader",Georgia,serif;font-size:24px;font-weight:700;color:var(--free-ink);margin:0 0 4px}
+.free-banner p{margin:0;color:var(--ink2);font-size:15.5px}
+.free-banner .badge{flex:none;background:var(--free-ink);color:#fff;font-weight:800;font-size:13px;letter-spacing:.08em;padding:6px 10px;border-radius:6px;margin-top:4px}
+@media (prefers-color-scheme: dark){ .free-banner .badge{color:#0e1a0d} }
+
+/* ---------- sections ---------- */
+section{padding:28px 0 6px}
+.sec-head{margin-bottom:14px}
+.sec-head h2{font-size:clamp(25px,3.6vw,34px);margin-bottom:6px}
+.sec-head p{color:var(--ink2);margin:0;max-width:68ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
+.lawbox{background:var(--law-bg);border-left:4px solid var(--accent);border-radius:0 10px 10px 0;padding:12px 16px;margin:12px 0;font-size:15.5px}
+.lawbox .lawlabel{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:3px}
+.lawbox p{margin:0;color:var(--ink2)}
+.lawbox cite{font-style:normal;font-weight:700;color:var(--ink)}
+ol.steps,ul.plain{margin:8px 0 8px 22px;padding:0}
+ol.steps li,ul.plain li{margin:7px 0}
+ol.steps li::marker{font-weight:800;color:var(--accent)}
+.nextstep{background:var(--accent-soft);border-radius:10px;padding:12px 16px;font-size:15.5px;margin-top:12px}
+.nextstep strong{color:var(--accent)}
+
+/* ---------- ask box ---------- */
+.askwrap{display:grid;grid-template-columns:1fr;gap:0}
+.chatlog{background:var(--surface2);border:1px solid var(--line);border-radius:12px 12px 0 0;padding:18px;min-height:220px;max-height:520px;overflow-y:auto}
+.msg{max-width:88%;margin:0 0 14px}
+.msg .who{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.msg .bubble{border-radius:12px;padding:13px 16px;font-size:16px}
+.msg.user{margin-left:auto}
+.msg.user .who{text-align:right}
+.msg.user .bubble{background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:3px}
+.msg.bot .bubble{background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:3px}
+.msg.bot .bubble p{margin:0 0 8px}
+.msg.bot .bubble p:last-child{margin-bottom:0}
+.msg.bot ol{margin:6px 0 6px 20px;padding:0}
+.msg.bot ol li{margin:5px 0}
+.msg.bot .lawline{font-size:14.5px;background:var(--law-bg);border-radius:8px;padding:8px 11px;margin:8px 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px;background:var(--surface);border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.chips .chiplabel{width:100%;font-size:13px;font-weight:700;color:var(--muted)}
+.chip{background:var(--chip-bg);border:1px solid var(--line-strong);border-radius:999px;padding:7px 13px;font-size:14.5px;font-weight:600;color:var(--ink)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.askform{display:flex;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:0 0 12px 12px;padding:12px}
+.askform input{flex:1;min-width:0;font:inherit;padding:12px 14px;border:1px solid var(--line-strong);border-radius:9px;background:var(--surface2);color:var(--ink)}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:9px;padding:12px 20px;font-weight:700;font-size:16px}
+.btn:hover{filter:brightness(1.08)}
+.btn.secondary{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.btn.ghost{background:transparent;color:var(--ink2);border:1px solid var(--line-strong)}
+
+/* ---------- path tabs ---------- */
+.pathtabs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.pathtab{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:14px;text-align:left;color:var(--ink)}
+.pathtab .t{font-family:"Newsreader",Georgia,serif;font-size:19px;font-weight:700;display:block;margin-bottom:3px}
+.pathtab .d{font-size:13.5px;color:var(--muted);display:block;line-height:1.4}
+.pathtab[aria-selected="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.pathpanel h3{font-size:23px;margin-bottom:4px}
+.pathpanel h4{font-size:16px;margin:18px 0 4px;font-family:"Public Sans",sans-serif;font-weight:800}
+.free-strip{display:flex;gap:10px;align-items:flex-start;background:var(--free-bg);border:1px solid var(--free-line);border-radius:10px;padding:12px 15px;margin:12px 0;font-size:15.5px;color:var(--ink2)}
+.free-strip strong{color:var(--free-ink)}
+.formtag{display:inline-block;background:var(--ink);color:var(--bg);font-weight:800;font-size:13px;border-radius:6px;padding:3px 9px;letter-spacing:.03em}
+@media (prefers-color-scheme: dark){ .formtag{color:#171815} }
+table.map{width:100%;border-collapse:collapse;font-size:15px;margin:8px 0}
+table.map th,table.map td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top}
+table.map th{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+@media (max-width:640px){
+  table.map,table.map tbody,table.map tr,table.map td{display:block;width:100%}
+  table.map thead{display:none}
+  table.map tr{border-bottom:2px solid var(--line);padding:6px 0}
+  table.map td{border-bottom:0;padding:4px 2px}
+  table.map td:first-child{font-weight:700}
+}
+
+/* ---------- law library ---------- */
+details.lawitem{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden}
+details.lawitem summary{cursor:pointer;padding:16px 18px;font-family:"Newsreader",Georgia,serif;font-size:19px;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:10px;align-items:center}
+details.lawitem summary::-webkit-details-marker{display:none}
+details.lawitem summary .plus{font-family:"Public Sans",sans-serif;color:var(--accent);font-weight:800;font-size:22px;flex:none}
+details.lawitem .body{padding:0 18px 16px;color:var(--ink2);font-size:16px}
+details.lawitem .body p{margin:0 0 9px}
+
+/* ---------- interview ---------- */
+fieldset{border:1px solid var(--line);border-radius:12px;padding:18px;margin:0 0 16px;background:var(--surface)}
+legend{font-family:"Newsreader",Georgia,serif;font-size:20px;font-weight:700;padding:0 8px}
+.field{margin-bottom:14px}
+.field label{display:block;font-weight:700;font-size:15px;margin-bottom:5px}
+.field .hint{font-size:13.5px;color:var(--muted);margin:-2px 0 6px}
+.field input[type=text],.field input[type=date],.field input[type=tel],.field select,.field textarea{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line-strong);border-radius:9px;background:var(--surface2);color:var(--ink)}
+.field textarea{min-height:88px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.toggles{display:flex;flex-wrap:wrap;gap:8px}
+.toggle{background:var(--surface2);border:1.5px solid var(--line-strong);border-radius:999px;padding:8px 14px;font-size:15px;font-weight:600;color:var(--ink)}
+.toggle[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.incident{border:1px dashed var(--line-strong);border-radius:10px;padding:14px;margin-bottom:12px;background:var(--surface2)}
+.incident .inc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.incident .inc-head strong{font-size:15px}
+.btn-small{padding:7px 12px;font-size:14px;border-radius:7px}
+.draftout{background:var(--surface2);border:1px solid var(--line-strong);border-radius:10px;padding:18px;white-space:pre-wrap;font-size:15.5px;line-height:1.6;max-height:560px;overflow-y:auto}
+.draft-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.statusline{font-size:14.5px;color:var(--accent);font-weight:600;min-height:1.4em;margin-top:8px}
+
+/* ---------- filing / timeline ---------- */
+.grid-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.timeline{list-style:none;margin:0;padding:0;counter-reset:tl}
+.timeline li{position:relative;padding:0 0 20px 52px;counter-increment:tl}
+.timeline li::before{content:counter(tl);position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:16px}
+.timeline li::after{content:"";position:absolute;left:16px;top:40px;bottom:2px;width:2px;background:var(--line-strong)}
+.timeline li:last-child::after{display:none}
+.timeline h3{font-size:19px;margin-bottom:3px}
+.timeline p{margin:0;color:var(--ink2);font-size:15.5px}
+.checklist{list-style:none;margin:0;padding:0}
+.checklist li{padding:9px 0 9px 34px;position:relative;border-bottom:1px solid var(--line)}
+.checklist li:last-child{border-bottom:0}
+.checklist li::before{content:"";position:absolute;left:2px;top:12px;width:17px;height:17px;border:2px solid var(--accent);border-radius:4px}
+.resource{display:flex;flex-direction:column;gap:2px;padding:14px 0;border-bottom:1px solid var(--line)}
+.resource:last-child{border-bottom:0}
+.resource .rname{font-weight:800;font-size:17px}
+.resource .rphone{font-family:"Newsreader",Georgia,serif;font-size:22px;font-weight:700}
+.resource p{margin:2px 0 0;color:var(--ink2);font-size:15px}
+footer{margin-top:36px;border-top:1px solid var(--line);padding:22px 0 44px;color:var(--muted);font-size:14.5px}
+footer p{max-width:70ch}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:820px){ .pathtabs{grid-template-columns:1fr 1fr} .grid-cards{grid-template-columns:1fr} .grid2{grid-template-columns:1fr} }
+@media (max-width:480px){ .pathtabs{grid-template-columns:1fr} body{font-size:16px} .msg{max-width:96%} }
+@media print{
+  .safetybar,.askform,.chips,.pathtabs,.draft-actions,.btn-exit,.btn-clearpage,nav.jumpnav{display:none!important}
+  body{background:#fff;color:#000;font-size:12pt}
+  .card,fieldset,details.lawitem{box-shadow:none;border-color:#999}
+  details.lawitem .body{display:block}
+}
+@media print{ :root{ --bg:#fff; --surface:#fff; --surface2:#fff; --ink:#000; --ink2:#222; --muted:#444; --line:#999; --line-strong:#777; --accent:#000; --accent-soft:#eee; --law-bg:#f2f2f2; --free-bg:#fff; --free-ink:#000; } }
+</style>
+<style>
+/* ===== Ink & Ember look: deep charcoal, ember amber, warm parchment ===== */
+:root{
+  color-scheme: dark;
+  --bg:#171310; --bg2:#1e1915; --surface:#231e18; --surface2:#1b1712;
+  --ink:#f2e7d3; --ink2:#ddd0b8; --muted:#b3a284;
+  --line:#40382c; --line-strong:#5f5138;
+  --accent:#eba937; --accent-ink:#261806; --accent-soft:#38300f;
+  --free-bg:#2c2a13; --free-line:#8a6d2f; --free-ink:#ffd98a;
+  --warn-bg:#38300f; --warn-line:#8a6d2f; --warn-ink:#ffe1a1;
+  --danger:#d95f33; --danger-ink:#ffffff;
+  --law-bg:#2a2317; --chip-bg:#262019;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 28px -18px rgba(0,0,0,.9);
+}
+body{background:var(--bg)}
+.safetybar{background:#0c0a08;color:#f2e7d3}
+.safetybar .danger-note a{color:#ffb84d}
+.btn-clearpage{color:#f2e7d3;border-color:rgba(242,231,211,.4)}
+.free-banner .badge{color:#261806!important}
+.formtag{color:#171310}
+header.hero h1{color:#f7ecd9}
+.eyebrow{color:var(--accent)}
+/* ===== main tabs ===== */
+.tabbar{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 4px;padding:10px;background:var(--surface2);border:1px solid var(--line);border-radius:14px}
+.maintab{flex:1 1 auto;min-height:56px;padding:12px 14px;border-radius:10px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);font-weight:700;font-size:16.5px}
+.maintab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.srcline{display:block;font-size:13px;color:var(--muted);margin-top:8px;font-weight:600}
+.startbtn{font-size:19px;padding:16px 30px;border-radius:12px;min-height:60px}
+.quickrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.quickbtn{min-height:52px;padding:12px 16px;border-radius:10px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);font-weight:600;font-size:16px;text-align:left}
+.quickbtn:hover{border-color:var(--accent);color:var(--accent)}
+.chip{min-height:44px;display:inline-flex;align-items:center}
+.pathtab{min-height:64px}
+.toggle{min-height:48px}
+.btn{min-height:50px}
+@media print{ .tabbar{display:none!important} }
+</style>
+</head>
+<body>
+
+<div class="safetybar" role="region" aria-label="Safety tools">
+  <div class="wrap">
+    <span class="danger-note">In immediate danger? Call <a href="tel:911">911</a> · Willow (free, 24/7, Rochester): <a href="tel:+15852227233">585-222-7233</a></span>
+    <span class="spacer"></span>
+    <button class="btn-clearpage" id="clearPageBtn" type="button">Clear this page</button>
+    <button class="btn-exit" id="quickExitBtn" type="button">Quick exit ✕</button>
+  </div>
+</div>
+
+<div class="wrap">
+<header class="hero">
+  <p class="eyebrow">Monroe County · New York Family Court</p>
+  <h1>The Morales Report maker</h1>
+  <p style="font-family:'Newsreader',Georgia,serif;font-size:clamp(19px,2.6vw,24px);color:var(--accent);margin:-4px 0 12px;font-weight:600">Order of Protection Helper — file, renew, and re-file in New York</p>
+  <p class="lede">In New York it's called an <strong>Order of Protection</strong>. This page helps you file one, renew one, or report a violation. Plain words. Short steps. No lawyer needed. No fee.</p>
+  <p style="color:var(--muted);font-size:15px;max-width:760px">Free legal <em>information</em> — not a lawyer, not legal advice. Only a judge can issue an order. Full details are in the Help &amp; Sources tab.</p>
+  <span class="srcline">✓ “No fee / no lawyer needed” checked Nov 5, 2026 — NY Courts (nycourts.gov) · WomensLaw.org · Family Court Act agree. Every key fact on this page carries its check line; the full table is in Help &amp; Sources.</span>
+  <div style="margin:18px 0 4px">
+    <button class="btn startbtn" id="startBtn" type="button">Start — help me file</button>
+    <div class="quickrow" aria-label="Or pick your situation">
+      <button class="quickbtn" type="button" data-goto="renew">My order is ending or ended</button>
+      <button class="quickbtn" type="button" data-goto="file" data-path="violation">They broke my order</button>
+      <button class="quickbtn" type="button" data-goto="hearing">I have a hearing coming up</button>
+      <button class="quickbtn" type="button" data-goto="ask">I just have a question</button>
+    </div>
+  </div>
+  <p class="privacy-note">Built for safety: <strong>your answers auto-save on this device only</strong> — never on a server, never sent anywhere, never visible to anyone else. If you close the page, get cut off, or your phone dies, come back on this same device and tap “Continue where you left off.” <strong>Warning:</strong> saved answers stay on this device until you erase them with the big “Clear my answers” button — if this device isn't safe or is shared, erase when you're done, and use a device the other person can't check whenever you can.</p>
+  <p class="privacy-note"><strong>Share this link freely.</strong> It's just a web page — no app to install, no login, no account. Anyone who opens it gets their own private copy: answers save only on each person's own device, so what you type is never visible to anyone else, and what they type is never visible to you.</p>
+
+  <div class="free-banner" role="note">
+    <span class="badge">FREE</span>
+    <div>
+      <p class="big">Is it free? Yes — completely.</p>
+      <p>Filing, extending, re-filing, and reporting a violation in <strong>Family Court costs $0</strong>. No filing fee. You do <strong>not</strong> need a lawyer. If you can't afford one, you can <strong>ask the judge to assign you one for free</strong>. (Divorce and other <em>Supreme Court</em> civil cases are a different court and can have fees — Family Court is free.)</p>
+      <span class="srcline">✓ Checked Nov 5, 2026 — NY Courts (nycourts.gov) · WomensLaw.org · Legal Aid sources agree. One caution about online-filing fees is flagged in Help &amp; Sources.</span>
+    </div>
+  </div>
+
+  <div class="free-banner" id="welcomeBack" hidden style="border-color:var(--accent)">
+    <span class="badge" style="background:var(--accent);color:var(--accent-ink)">SAVED</span>
+    <div style="flex:1">
+      <p class="big" style="color:var(--ink)">Welcome back — your answers are still here.</p>
+      <p>We found answers you saved on this device <span id="wbWhen"></span>. Nothing was sent anywhere — they never left this phone/computer. Pick up right where you stopped, or erase everything and start fresh.</p>
+      <div class="draft-actions">
+        <button class="btn" id="wbContinue" type="button">Continue where you left off</button>
+        <button class="btn ghost" id="wbErase" type="button">Erase &amp; start fresh</button>
+      </div>
+    </div>
+  </div>
+
+</header>
+  <div class="tabbar" role="tablist" aria-label="Main sections">
+    <button class="maintab" role="tab" id="mtab-start" data-tab="start" aria-selected="true" type="button">Start</button>
+    <button class="maintab" role="tab" id="mtab-file" data-tab="file" aria-selected="false" type="button">File</button>
+    <button class="maintab" role="tab" id="mtab-renew" data-tab="renew" aria-selected="false" type="button">Renew or Re-file</button>
+    <button class="maintab" role="tab" id="mtab-ask" data-tab="ask" aria-selected="false" type="button">Ask a Question</button>
+    <button class="maintab" role="tab" id="mtab-hearing" data-tab="hearing" aria-selected="false" type="button">Hearing Prep</button>
+    <button class="maintab" role="tab" id="mtab-mycase" data-tab="mycase" aria-selected="false" type="button">My Case</button>
+    <button class="maintab" role="tab" id="mtab-help" data-tab="help" aria-selected="false" type="button">Help &amp; Sources</button>
+  </div>
+
+
+<!-- ================= ASK A QUESTION ================= -->
+<section id="ask" aria-labelledby="ask-h">
+  <div class="sec-head">
+    <h2 id="ask-h">Ask a question</h2>
+    <p>Type what you're wondering in your own words — like “what do I do if he texts me anyway?” Every answer explains the law simply and ends with numbered steps you can actually take. Answers come from the New York rules covered on this page; for advice about your exact situation, use the free help at the bottom.</p>
+  </div>
+  <div class="askwrap">
+    <div class="chatlog" id="chatLog" aria-live="polite" aria-label="Answers">
+      <div class="msg bot">
+        <div class="who">Helper</div>
+        <div class="bubble">
+          <p>Hi. You can ask me things like how to file, how to renew an order that's about to expire, or what to do if the other person breaks the order. Tap a question below or type your own.</p>
+          <p><strong>Remember:</strong> if you are in danger right now, call <strong>911</strong> first. You can come back to this page after.</p>
+        </div>
+      </div>
+    </div>
+    <div class="chips" id="chipRow" aria-label="Suggested questions">
+      <span class="chiplabel">Tap a question:</span>
+    </div>
+    <form class="askform" id="askForm">
+      <label class="sr-only" for="askInput">Type your question</label>
+      <input id="askInput" type="text" placeholder="Type your question in plain words…" autocomplete="off" />
+      <button class="btn" type="submit">Ask</button>
+    </form>
+  </div>
+</section>
+
+<!-- ================= THE 4 PATHS ================= -->
+<section id="paths" aria-labelledby="paths-h">
+  <div class="sec-head">
+    <h2 id="paths-h">Start here: which path is yours?</h2>
+    <p>“Resubmitting” a restraining order is really three different things in New York, and each one uses a different form. Pick the one that matches your situation — the steps and the law change depending on which it is.</p>
+  </div>
+
+  <div class="pathtabs" role="tablist" aria-label="Choose your path">
+    <button class="pathtab" role="tab" id="tab-first" aria-selected="true" aria-controls="panel-first" data-path="first" type="button"><span class="t">1 · First filing</span><span class="d">You've never had an order, or you're starting fresh.</span></button>
+    <button class="pathtab" role="tab" id="tab-extend" aria-selected="false" aria-controls="panel-extend" data-path="extend" type="button"><span class="t">2 · Extend it</span><span class="d">You have an order and it hasn't expired yet.</span></button>
+    <button class="pathtab" role="tab" id="tab-refile" aria-selected="false" aria-controls="panel-refile" data-path="refile" type="button"><span class="t">3 · Re-file</span><span class="d">Your order already expired, or your case was dismissed.</span></button>
+    <button class="pathtab" role="tab" id="tab-violation" aria-selected="false" aria-controls="panel-violation" data-path="violation" type="button"><span class="t">4 · They broke it</span><span class="d">You have an order and the other person violated it.</span></button>
+  </div>
+
+  <!-- FIRST FILING -->
+  <div class="card pathpanel" role="tabpanel" id="panel-first" aria-labelledby="tab-first">
+    <h3>First filing — asking Family Court for an Order of Protection</h3>
+    <div class="free-strip"><span aria-hidden="true">💲</span><p><strong>Cost: $0.</strong> No filing fee in Family Court, no lawyer required, and service of the papers is free. You can ask the judge for a free assigned lawyer if you can't afford one.</p></div>
+    <div class="lawbox"><span class="lawlabel">The law, simply</span><p>Family offense cases live in <cite>Family Court Act Article 8 (§§ 812–846)</cite>. You file a sworn paper called a <strong>petition</strong> saying the other person committed a “family offense” — one of the specific acts listed in <cite>§ 812</cite> (hitting, threatening, stalking, repeated harassing contact, and more — full list in “The law” section below). Family Court is a <em>civil</em> court: at the hearing you must show it is “more likely than not” that it happened (<cite>§ 832</cite>, called a fair preponderance of the evidence). You do <em>not</em> have to call the police first or press charges to use Family Court.</p></div>
+    <h4>The form</h4>
+    <p><span class="formtag">Form 8-2</span> &nbsp;<strong>Family Offense Petition.</strong> Get it free at the courthouse (staff will hand it to you and can help you fill it in), or download it from the official NY Courts family offense forms page linked at the bottom of this page.</p>
+    <h4>What Form 8-2 asks for — and where your answers come from</h4>
+    <table class="map">
+      <thead><tr><th>The form asks…</th><th>In plain words</th><th>From the worksheet below</th></tr></thead>
+      <tbody>
+        <tr><td>Your name &amp; the other person's name</td><td>You are the <strong>petitioner</strong>. They are the <strong>respondent</strong>.</td><td>“About you” + “About the other person”</td></tr>
+        <tr><td>Your relationship to them</td><td>Why Family Court can hear it — spouse/ex, relative, child in common, or dating/intimate partner (<cite>§ 812</cite>).</td><td>“How you are connected”</td></tr>
+        <tr><td>What family offense(s) happened</td><td>Check the boxes that match (harassment, menacing, assault, stalking…) and describe each incident.</td><td>Your incident log</td></tr>
+        <tr><td>Dates, places, details of each incident</td><td>What happened, when, where, injuries, weapons, witnesses, whether police were called.</td><td>Your incident log</td></tr>
+        <tr><td>Whether children were there / are at risk</td><td>So the judge can protect them too and address custody/visits safely.</td><td>“Children” answers</td></tr>
+        <tr><td>What protection you are asking for</td><td>Stay away, no contact, leave the home, etc. (<cite>§ 842</cite> lists what a judge can order).</td><td>“Protection you need”</td></tr>
+        <tr><td>Your signature (sworn statement)</td><td>You sign saying it's true. Ask the clerk how they want it sworn — don't sign blank.</td><td>Done in person at filing</td></tr>
+      </tbody>
+    </table>
+    <h4>Steps</h4>
+    <ol class="steps">
+      <li><strong>Write down what happened</strong> while it's fresh — dates, places, exact words/threats, injuries, photos, texts. The worksheet below turns this into an incident log for you.</li>
+      <li><strong>Fill in Form 8-2</strong> at home from your worksheet, or at the courthouse with staff help. Both are fine and both are free.</li>
+      <li><strong>File it</strong> at Monroe County Family Court (in person or online — full instructions in “How to file” below). Same-day matters: go in the morning if you can.</li>
+      <li><strong>See the judge the same day</strong> for a possible <strong>Temporary Order</strong> (<cite>§ 828</cite>) — the judge can grant one right away, without the other person there.</li>
+      <li><strong>The papers get served</strong> on the other person for free. The order counts once they've been served (handed the papers).</li>
+      <li><strong>Come back for the hearing</strong> on the date the court gives you. Bring your evidence and any witnesses.</li>
+    </ol>
+    <div class="nextstep"><strong>Your next step:</strong> scroll to “Build your worksheet” and write your first incident. That's the hardest part of the form, and it's done once it's written.</div>
+    <span class="srcline">✓ Form, steps, and law on this screen checked Nov 5, 2026 — NY Courts · Family Court Act (NY Senate) · WomensLaw.org. Full check table in Help &amp; Sources.</span>
+  </div>
+
+  <!-- EXTEND -->
+  <div class="card pathpanel" role="tabpanel" id="panel-extend" aria-labelledby="tab-extend" hidden>
+    <h3>Extend it — your order is still active but the end date is coming</h3>
+    <div class="free-strip"><span aria-hidden="true">💲</span><p><strong>Cost: $0.</strong> Asking to extend is free — no fee, no lawyer required, service is free. File <strong>before</strong> the expiration date printed on your order; an expired Family Court order generally can't be revived, and a Criminal Court order can't be extended at all once it ends.</p></div>
+    <div class="lawbox"><span class="lawlabel">The law, simply</span><p><cite>Family Court Act § 842</cite> says the court may extend an order “for a reasonable period of time upon a showing of <strong>good cause</strong>” or if both sides agree. Good cause does <strong>not</strong> require new abuse or a new violation. The law says it word-for-word: the fact that no abuse happened while the order was in effect “shall not, in itself” be a reason to deny an extension — that's often proof the order is working. Judges look at the whole picture: why the order was issued, your relationship now, any contact or violations since, and whether your fear for your safety is reasonable. The judge must state the reason for the decision on the record.</p></div>
+    <h4>The forms</h4>
+    <p><span class="formtag">GF-10</span> <strong>Notice of Motion for Extension or Modification of Order of Protection</strong> &nbsp;+&nbsp; <span class="formtag">GF-10a</span> <strong>Affirmation in Support</strong> — your sworn statement explaining the good cause. A “motion” just means a formal written request to the same court that issued your order.</p>
+    <h4>What GF-10 / GF-10a ask for</h4>
+    <table class="map">
+      <thead><tr><th>The form asks…</th><th>In plain words</th><th>From the worksheet below</th></tr></thead>
+      <tbody>
+        <tr><td>Your existing order's details</td><td>Date issued, expiration date, docket/file number (all printed on your order).</td><td>“Your current order” answers</td></tr>
+        <tr><td>How long an extension you want</td><td>A reasonable period — people commonly ask for 2 years; up to 5 is possible in serious cases.</td><td>“Extension” answers</td></tr>
+        <tr><td>Why there is good cause</td><td>What still worries you: past conduct, any contact/attempts, ongoing fear, kids, shared places.</td><td>Your incident log + notes</td></tr>
+        <tr><td>Any changes you also want (modification)</td><td>Same motion can ask to add protections, e.g. cover a new address or workplace.</td><td>“Protection you need”</td></tr>
+      </tbody>
+    </table>
+    <h4>Steps</h4>
+    <ol class="steps">
+      <li><strong>Find the expiration date</strong> on your order and start <strong>at least 2–4 weeks before it</strong>.</li>
+      <li><strong>Write your good-cause story</strong>: why the order was granted, anything that's happened since (even “small” contact counts — log it), and why you still need protection.</li>
+      <li><strong>Complete GF-10 + GF-10a</strong> and file them with the Family Court that issued the order (in person or EDDS — see “How to file”).</li>
+      <li><strong>Have the motion served</strong> on the other person — ask the clerk about free service options.</li>
+      <li><strong>Go to the court date.</strong> Your old order stays in effect until the judge decides. Bring the order and your log.</li>
+    </ol>
+    <div class="nextstep"><strong>Your next step:</strong> check the date on your order today. If it's within 30 days of expiring, treat this as urgent and start the worksheet now.</div>
+    <span class="srcline">✓ Form, steps, and law on this screen checked Nov 5, 2026 — NY Courts · Family Court Act (NY Senate) · WomensLaw.org. Full check table in Help &amp; Sources.</span>
+  </div>
+
+  <!-- RE-FILE -->
+  <div class="card pathpanel" role="tabpanel" id="panel-refile" aria-labelledby="tab-refile" hidden>
+    <h3>Re-file — your order expired, or your earlier case was dismissed</h3>
+    <div class="free-strip"><span aria-hidden="true">💲</span><p><strong>Cost: $0.</strong> A new petition is free, just like the first one — no fee, no lawyer required, service is free. There is no charge for “starting over.”</p></div>
+    <div class="lawbox"><span class="lawlabel">The law, simply</span><p>Once an order expires, it can't be extended — so you file a <strong>new</strong> family offense petition under <cite>Article 8</cite>, using the same <cite>Form 8-2</cite>. The judge will need a family offense (<cite>§ 812</cite>) to act on, so a new petition is strongest when it includes <strong>recent incidents, new threats or contact, or an ongoing pattern</strong> — and you can (and should) describe the earlier history and the prior order as background. If your earlier case was dismissed because you missed a court date, tell the clerk — say so in the petition and ask about your options when you file.</p></div>
+    <h4>The form</h4>
+    <p><span class="formtag">Form 8-2</span> <strong>Family Offense Petition</strong> — the same form as a first filing. Write “prior order” details (dates, docket number if you have it) in the background section, and lead with the newest incidents.</p>
+    <h4>Steps</h4>
+    <ol class="steps">
+      <li><strong>Log anything new</strong> since the order ended — texts, showing up, threats, contact through other people. Dates matter.</li>
+      <li><strong>Gather the old paperwork</strong> if you have it: the expired order or dismissal. Note the docket number. (No paperwork? File anyway — the court has its own records.)</li>
+      <li><strong>Complete a fresh Form 8-2</strong> from your worksheet: newest incidents first, then a short history (“An order was issued on ___ and expired on ___”).</li>
+      <li><strong>File it</strong> in Monroe County Family Court (in person or online) and ask the judge for a new Temporary Order the same day if you need protection now (<cite>§ 828</cite>).</li>
+      <li><strong>Free service + hearing</strong>, same as a first filing.</li>
+    </ol>
+    <div class="nextstep"><strong>Your next step:</strong> in the worksheet's incident log, add the most recent thing that happened — even if it was “just” a message. That entry is the heart of a re-filing.</div>
+    <span class="srcline">✓ Form, steps, and law on this screen checked Nov 5, 2026 — NY Courts · Family Court Act (NY Senate) · WomensLaw.org. Full check table in Help &amp; Sources.</span>
+  </div>
+
+  <!-- VIOLATION -->
+  <div class="card pathpanel" role="tabpanel" id="panel-violation" aria-labelledby="tab-violation" hidden>
+    <h3>They broke the order — reporting a violation</h3>
+    <div class="free-strip"><span aria-hidden="true">💲</span><p><strong>Cost: $0.</strong> Calling the police is free, filing a violation petition is free, and you don't need a lawyer. You have <strong>two tracks at once</strong> — police <em>and</em> Family Court — and you can use both.</p></div>
+    <div class="lawbox"><span class="lawlabel">The law, simply</span><p>Breaking an Order of Protection is a crime, even if no one is physically hurt — a text or showing up can be enough if the order forbids contact. Police can arrest for <strong>criminal contempt</strong>: <cite>Penal Law § 215.50</cite> (2nd degree, a Class A misdemeanor, up to 364 days in jail), and violations involving threats, physical contact, weapons, or repeat offenses can be felonies under <cite>§§ 215.51–215.52</cite>. Separately, in Family Court you can file a violation petition under <cite>Family Court Act § 846</cite>; if the judge finds after a hearing that the person <strong>willfully</strong> disobeyed, the court can jail them for up to 6 months per violation (<cite>§ 846-a</cite>), extend or strengthen the order, or both. Note: the order binds the <em>respondent</em> — you, the protected person, cannot “violate” your own order, and their claim that you “invited” contact is not a defense.</p></div>
+    <h4>The form</h4>
+    <p><span class="formtag">GF-8</span> <strong>Petition — Violation of Order of Protection.</strong> It asks: which order (date/docket), which condition was broken, and exactly what they did, when, and where — plus what you want the court to do.</p>
+    <h4>Steps</h4>
+    <ol class="steps">
+      <li><strong>If it's happening now or you're unsafe, call 911.</strong> Tell the officer there is an Order of Protection — they can verify it in the statewide registry and arrest.</li>
+      <li><strong>Save everything</strong>: screenshots of texts/calls (with dates visible), voicemails, photos, names of witnesses. Don't delete the thread.</li>
+      <li><strong>Write the violation into your incident log</strong> below while it's fresh — one entry per violation.</li>
+      <li><strong>File GF-8</strong> in the Family Court that issued the order (in person or online). Keep a copy of the order with you — police and clerks will ask for the details on it.</li>
+      <li><strong>Go to the violation hearing.</strong> Bring your evidence. If the DA is also prosecuting criminal contempt, both cases can move forward at the same time.</li>
+    </ol>
+    <div class="nextstep"><strong>Your next step:</strong> screenshot the violation with the date showing, then log it in the worksheet. Then decide: police report, GF-8, or both — both is allowed.</div>
+    <span class="srcline">✓ Form, steps, and law on this screen checked Nov 5, 2026 — NY Courts · Family Court Act (NY Senate) · WomensLaw.org. Full check table in Help &amp; Sources.</span>
+  </div>
+</section>
+
+<!-- ================= THE LAW ================= -->
+<section id="law" aria-labelledby="law-h">
+  <div class="sec-head">
+    <h2 id="law-h">The law, in plain words</h2>
+    <p>Every topic below is the same pattern: what it means for you, in everyday language — then the actual New York law, cited, so you can check it or show a clerk, advocate, or lawyer exactly what you're talking about.</p>
+  </div>
+
+  <details class="lawitem">
+    <summary>What is an Order of Protection, legally? <span class="plus" aria-hidden="true">+</span></summary>
+    <div class="body">
+      <p>It's a court order signed by a judge that tells a specific person what they must or must not do — stay away from you, stop contacting you, leave a shared home, stay away from your children, and more. Breaking it is a crime. In New York there is no single “restraining order” — Orders of Protection come from Family Court, Criminal Court, or Supreme Court (usually inside a divorce).</p>
+      <div class="lawbox"><span class="lawlabel">The law</span><p><cite>Family Court Act § 842</cite> lists the conditions a Family Court judge can put in an order. Orders are also entered in the statewide registry under <cite>Executive Law § 221-a</cite>, which is how police anywhere in New York can verify yours.</p></div>
+    </div>
+  </details>
+
+  <details class="lawitem">
+    <summary>Family offenses — what counts (Article 8) <span class="plus" aria-hidden="true">+</span></summary>
+    <div class="body">
+      <p>Family Court can only act if what happened matches one of the “family offenses” in the law. In plain words, the list covers: hitting or trying to hurt someone; choking or blocking breathing; threats that make you fear harm; following, watching, or repeatedly contacting you to frighten you (stalking); repeated unwanted calls, texts, or messages meant to alarm or annoy (harassment); breaking your property; sexual contact without consent; forcing you to do something by threats (coercion); stealing your identity or money in certain cases; and posting intimate images of you without permission.</p>
+      <div class="lawbox"><span class="lawlabel">The law</span><p><cite>Family Court Act § 812(1)</cite> gives Family Court and Criminal Courts shared (“concurrent”) jurisdiction over acts that would constitute: disorderly conduct; harassment 1st &amp; 2nd degree; aggravated harassment 2nd degree; stalking 1st–4th degree; criminal mischief; menacing 2nd &amp; 3rd degree; reckless endangerment; criminal obstruction of breathing or blood circulation; strangulation 1st &amp; 2nd degree; assault 2nd &amp; 3rd degree and attempted assault; sexual misconduct; forcible touching; sexual abuse 2nd &amp; 3rd degree; identity theft 1st–3rd degree; grand larceny 3rd &amp; 4th degree; coercion 2nd degree and coercion 3rd degree (subdivisions 1–3); and unlawful dissemination or publication of an intimate image (Penal Law definitions apply to each).</p></div>
+      <p>Emotional abuse and controlling behavior are real and dangerous — but on their own they may not match a listed offense. An advocate at Willow or Legal Aid can help you describe what happened in a way the court can act on. Never exaggerate — describe exactly what happened; the details usually fit the list better than people expect.</p>
+    </div>
+  </details>
+
+  <details class="lawitem">
+    <summary>Who can ask Family Court for one? <span class="plus" aria-hidden="true">+</span></summary>
+    <div class="body">
+      <p>You qualify if the other person is: your current or former spouse; someone you have a child with; a relative by blood or marriage; someone you live or lived with as family; or someone you are or were in a dating/intimate relationship with (it does not have to have been sexual, and you don't have to have lived together). A roommate or casual acquaintance usually does <em>not</em> qualify for Family Court — but Criminal Court may still be an option if a crime was committed.</p>
+      <div class="lawbox"><span class="lawlabel">The law</span><p><cite>Family Court Act § 812(1)(a)–(e)</cite> defines “members of the same family or household.” For an “intimate relationship,” judges weigh the type of relationship, how often you interacted, and how long it lasted (§ 812(1)(e)).</p></div>
+    </div>
+  </details>
+
+  <details class="lawitem">
+    <summary>Family Court vs. Criminal Court — what's the difference? <span class="plus" aria-hidden="true">+</span></summary>
+    <div class="body">
+      <p><strong>Family Court</strong> is the one <em>you</em> start, for free, by filing a petition. It's civil: the goal is protection, and you must show the offense is “more likely than not.” You don't need police involvement. <strong>Criminal Court</strong> starts when police make an arrest and the District Attorney prosecutes a crime; the judge there can also issue an Order of Protection, but you don't control that case and the standard of proof is higher (“beyond a reasonable doubt”). You can have both at the same time — they don't cancel each other out.</p>
+      <div class="lawbox"><span class="lawlabel">The law</span><p>Concurrent jurisdiction: <cite>Family Court Act § 812(1)</cite>. Family Court burden of proof (“fair preponderance of the evidence”): <cite>§ 832</cite>. A Family Court case is civil and its purpose is “to stop the violence, end the family disruption and obtain protection”: <cite>§ 812(2)(b)</cite>. One practical difference: a Criminal Court order <strong>cannot be extended</strong> after it expires — a Family Court order can be extended on good cause before it expires (<cite>§ 842</cite>).</p></div><span class="srcline">✓ Checked Nov 5, 2026 — Family Court Act §§ 812, 832, 842 · WomensLaw.org · NY Courts agree.</span>
+    </div>
+  </details>
+
+  <details class="lawitem">
+    <summary>Temporary vs. final orders <span class="plus" aria-hidden="true">+</span></summary>
+    <div class="body">
+      <p>A <strong>Temporary Order</strong> is emergency protection a judge can grant the same day you file, based on your petition alone, before the other person is heard. It lasts until your hearing date (courts usually set that within about two weeks, and it can be continued). It only becomes enforceable once the other person is served with it. A <strong>final Order</strong> comes after the hearing, where both sides can be heard — that's the longer order.</p>
+      <p><strong>After hours:</strong> if Family Court is closed and you need protection right away, police can help you reach a Criminal Court judge who can issue a short Family Court temporary order on a form called GF-5b. It lasts <strong>no more than 4 days</strong> — you must go to Family Court before it runs out.</p>
+      <div class="lawbox"><span class="lawlabel">The law</span><p>Temporary orders: <cite>Family Court Act § 828</cite>. You have the right to file and be heard the same day or the next day Family Court is open: <cite>§ 154</cite> (see also <cite>§ 153-c</cite>). After-hours temporary orders through Criminal Court use <cite>Form GF-5b</cite>.</p></div>
+    </div>
+  </details>
+
+  <details class="lawitem">
+    <summary>How long does a final order last? <span class="plus" aria-hidden="true">+</span></summary>
+    <div class="body">
+      <p>Usually <strong>up to 2 years</strong>. If the judge finds “aggravating circumstances” — things like a weapon being used, serious injury, threats with a weapon, or prior violations — the order can last <strong>up to 5 years</strong>. The same is true if the conduct violated an earlier valid order. Check the expiration date printed on yours; that's the date your extension deadline is counted from.</p>
+      <div class="lawbox"><span class="lawlabel">The law</span><p><cite>Family Court Act § 842</cite>: an order “shall set forth reasonable conditions of behavior to be observed for a period not in excess of two years … or … five years” on a finding of aggravating circumstances (defined in <cite>§ 827(a)(vii)</cite>) or a finding that the conduct violated a valid order of protection.</p></div><span class="srcline">✓ Checked Nov 5, 2026 — Family Court Act § 842 · WomensLaw.org · NY Courts agree.</span>
+    </div>
+  </details>
+
+  <details class="lawitem">
+    <summary>Two kinds of orders: “stay away” vs. “refrain from” <span class="plus" aria-hidden="true">+</span></summary>
+    <div class="body">
+      <p>A <strong>full (“stay away”) order</strong> means no contact at all — no calls, texts, DMs, notes, gifts, showing up, or messages passed through friends or family — and staying a set distance from you, your home, work, school, and your children. A <strong>limited (“refrain from”) order</strong> lets the person be around you (some families need this for shared housing or kids) but forbids them from harassing, threatening, assaulting, or intimidating you. Even under a limited order, abusive behavior is a violation. You can ask for the full order; the judge decides.</p>
+      <div class="lawbox"><span class="lawlabel">The law</span><p>Conditions a judge may impose are listed in <cite>Family Court Act § 842</cite>, including staying away from the home, school, business, or place of employment of protected persons, and refraining from family offenses. Orders can also address temporary custody and safe visitation, and can require surrender of firearms in qualifying cases.</p></div>
+    </div>
+  </details>
+
+  <details class="lawitem">
+    <summary>Extending, re-filing, and violations — the rules in one place <span class="plus" aria-hidden="true">+</span></summary>
+    <div class="body">
+      <p><strong>Extend (before it expires):</strong> motion GF-10 + affirmation GF-10a, showing “good cause.” No new incident is required, and the judge can't deny it just because things have been quiet. <strong>Re-file (after it expires or a dismissal):</strong> a new Form 8-2 petition; lead with new incidents or ongoing threats and include the history. <strong>Violation (they broke a live order):</strong> call police (criminal contempt) and/or file GF-8 in Family Court; a willful violation can mean up to 6 months in jail per violation, plus a longer or stronger order.</p>
+      <div class="lawbox"><span class="lawlabel">The law</span><p>Extension: <cite>Family Court Act § 842</cite> (“good cause”; quiet period alone is not sufficient ground to deny). Violation petitions and consequences: <cite>§§ 846, 846-a</cite>. Criminal contempt: <cite>Penal Law § 215.50</cite> (Class A misdemeanor, up to 364 days), <cite>§ 215.51</cite> (Class E felony, up to 4 years), <cite>§ 215.52</cite> (aggravated, Class D felony, up to 7 years).</p></div>
+    </div>
+  </details>
+</section>
+
+<!-- ================= AUTOMATION: CAN / CANNOT ================= -->
+<section id="automate" aria-labelledby="automate-h">
+  <div class="sec-head">
+    <h2 id="automate-h">What this helper automates — and what it can't</h2>
+    <p>Enter your case details once, below, and they carry into every form. But be clear-eyed about the limits: no website can file for you, serve papers, or decide your case.</p>
+  </div>
+  <div class="grid-cards">
+    <div class="card">
+      <h3 style="font-size:21px;margin-bottom:8px">✓ This helper does for you</h3>
+      <ul class="plain">
+        <li><strong>Plain-language interview</strong> — asks the right questions for your path (first filing, extension, re-file, violation).</li>
+        <li><strong>Auto-filled draft forms</strong> — your file/docket number, court, judge, expiration date, and the other person's name flow into a Form 8-2 draft, a GF-10/GF-10a extension draft, a re-filing draft, and a GF-8 violation draft.</li>
+        <li><strong>Incident log → evidence checklist</strong> — turns what you write into a list of what to save and bring.</li>
+        <li><strong>Deadline math</strong> — counts the days left on your order and builds calendar reminders (30, 14, and 7 days before it expires) you can download.</li>
+        <li><strong>Step-by-step filing instructions</strong> for Monroe County, in person and online.</li>
+        <li><strong>A printable worksheet</strong> — download it or print this page from your browser and carry it into court.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="font-size:21px;margin-bottom:8px">✕ Only the court can do these</h3>
+      <ul class="plain">
+        <li><strong>The judge's decision.</strong> Only a judge can grant, deny, extend, or change an order.</li>
+        <li><strong>Serving the papers.</strong> The respondent must be handed the petition and order — arranged free through the court/law enforcement. Don't serve them yourself.</li>
+        <li><strong>The hearing.</strong> You (and usually the other side) appear in court, in person or as the court directs.</li>
+        <li><strong>The actual filing.</strong> You still file — in person at the courthouse or through the court's EDDS online system. This page prepares everything; it does not submit anything.</li>
+        <li><strong>Enforcement.</strong> If they break the order, police and the court enforce it — call 911.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PAPERWORK PREP (CORE FLOW) ================= -->
+<section id="worksheet" aria-labelledby="prep-h">
+  <div class="sec-head">
+    <h2 id="prep-h">Prep my paperwork — the main job of this page</h2>
+    <p>Five steps: <strong>1)</strong> answer a short interview, <strong>2)</strong> this page fills your paperwork packet from your answers and your file number, <strong>3)</strong> you review and fix every answer, <strong>4)</strong> you download or print the packet with its cover checklist, <strong>5)</strong> you file it using the Monroe County steps right below the packet. Your case details are typed once and reused in every form.</p>
+  </div>
+
+  <!-- SAVE & RESUME -->
+  <div class="card" id="saveCard" style="margin-bottom:16px">
+    <h3 style="font-size:21px;margin-bottom:6px">Save &amp; resume — never start over</h3>
+    <p style="color:var(--ink2);margin-top:0">Your answers <strong>save automatically on this device</strong> as you type. Get kicked off, close the page, phone dies — come back on this same device and tap <strong>“Continue where you left off.”</strong> Your answers are saved <strong>only on this device</strong>: not on a server, not in the cloud, not shared with anyone. Switching devices? Download your progress file here and re-upload it over there. <span id="lastSaved" style="font-weight:600"></span></p>
+    <div class="draft-actions">
+      <button class="btn secondary" id="downloadProgressBtn" type="button">Download My Progress (file)</button>
+      <label class="btn secondary" for="progressFile" style="display:inline-block">Re-upload progress to resume</label>
+      <input type="file" id="progressFile" accept=".json,application/json" class="sr-only" />
+    </div>
+    <div class="draft-actions" style="margin-top:14px">
+      <button class="btn" id="clearAnswersBtn" type="button" style="background:var(--danger);color:var(--danger-ink);font-size:17px;padding:14px 22px">Clear my answers — erase everything on this device</button>
+    </div>
+    <p class="statusline" id="saveStatus" role="status"></p>
+    <p style="font-size:14.5px;color:var(--muted);margin-bottom:0">Safety note: anyone who opens this page <em>on this device</em> could see saved answers. If that's a risk, press “Clear my answers” when you finish, every time — or move your work to a safer device with the progress file and erase it here.</p>
+  </div>
+
+  <!-- STEP 1: MY CASE -->
+  <fieldset>
+    <legend>Step 1a · My case — type it once, it fills every form</legend>
+    <div class="grid2">
+      <div class="field"><label for="caseFileNo">File / docket number (if you already have a case)</label><p class="hint">Printed on your order or petition paperwork, e.g. O-01234-26. New filer with no case yet? Leave blank — the court assigns one.</p><input type="text" id="caseFileNo" placeholder="e.g. O-01234-26" autocomplete="off" /></div>
+      <div class="field"><label for="caseCourt">Court</label><input type="text" id="caseCourt" value="Monroe County Family Court" /></div>
+      <div class="field"><label for="caseJudge">Judge / referee (if known)</label><input type="text" id="caseJudge" placeholder="Optional — it's on your order" autocomplete="off" /></div>
+      <div class="field"><label for="caseOrderType">My current order type (if any)</label><select id="caseOrderType"><option value="">I don't have an order yet</option><option value="Full stay-away order">Full stay-away order</option><option value="Limited refrain-from order">Limited “refrain from” order</option><option value="Temporary order">Temporary order</option><option value="Not sure">Not sure</option></select></div>
+      <div class="field"><label for="caseIssued">Order issued date (if any)</label><input type="date" id="caseIssued" /></div>
+      <div class="field"><label for="caseExpires">Order expiration date (if any)</label><input type="date" id="caseExpires" /></div>
+    </div>
+    <div id="deadlineBox" class="nextstep" hidden></div>
+    <div class="draft-actions">
+      <button class="btn secondary btn-small" id="icsBtn" type="button" hidden>Download calendar reminders (.ics)</button>
+      <span class="statusline" id="icsStatus" role="status"></span>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Step 1b · About you and the other person</legend>
+    <div class="grid2">
+      <div class="field"><label for="myName">Your full legal name (petitioner)</label><input type="text" id="myName" placeholder="Your name" autocomplete="off" /></div>
+      <div class="field"><label for="respName">Other person's full name (respondent)</label><input type="text" id="respName" placeholder="Their name" autocomplete="off" /></div>
+      <div class="field"><label for="relationship">How are you connected to them?</label><select id="relationship"><option value="">Choose one…</option><option>Current spouse</option><option>Former spouse</option><option>We have a child together</option><option>Related by blood or marriage</option><option>We live / lived together as family</option><option>Dating or intimate partner (current)</option><option>Dating or intimate partner (former)</option><option>Other / not sure</option></select><p class="hint">Family Court Act § 812 — this is why Family Court can hear your case.</p></div>
+      <div class="field"><label for="safeContact">A safe phone or email for the court to reach you</label><p class="hint">Only use a contact the other person can't see. You can also ask the clerk to keep your address confidential.</p><input type="text" id="safeContact" placeholder="Safe phone or email" autocomplete="off" /></div>
+      <div class="field"><label for="childrenInfo">Children involved (names/ages, or “none”)</label><input type="text" id="childrenInfo" placeholder="e.g. Daughter, 7 — or: none" autocomplete="off" /></div>
+      <div class="field"><label for="respWhere">Where can the respondent be found for service? (address/work — optional)</label><p class="hint">Helps the court arrange free service. Skip if you don't know or it's unsafe to write down here.</p><input type="text" id="respWhere" placeholder="Optional" autocomplete="off" /></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Step 1c · What happened — your incident log</legend>
+    <p style="margin-top:0;color:var(--ink2)">One entry per incident, newest first if you can. Plain facts: what they did or said, when, where, injuries, witnesses, police. This log becomes the heart of your petition <em>and</em> your evidence checklist.</p>
+    <div id="incidentList"></div>
+    <button class="btn ghost btn-small" id="addIncidentBtn" type="button">+ Add an incident</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>Step 1d · Protection you need + path details</legend>
+    <div class="field"><label>Tap everything you're asking the judge for (Form 8-2 “relief” / § 842 conditions)</label>
+      <div class="toggles" id="protectionToggles">
+        <button type="button" class="toggle" aria-pressed="false">Stay away from me</button>
+        <button type="button" class="toggle" aria-pressed="false">No contact at all — calls, texts, social media, through others</button>
+        <button type="button" class="toggle" aria-pressed="false">Stay away from my home</button>
+        <button type="button" class="toggle" aria-pressed="false">Stay away from my work / school</button>
+        <button type="button" class="toggle" aria-pressed="false">Stay away from the children &amp; their school</button>
+        <button type="button" class="toggle" aria-pressed="false">Leave the shared home</button>
+        <button type="button" class="toggle" aria-pressed="false">Stop threatening, harassing, or hurting me (refrain-from)</button>
+        <button type="button" class="toggle" aria-pressed="false">Safe custody / visitation rules</button>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label for="extLength">Extension only: how long are you asking for?</label><select id="extLength"><option value="">Not extending</option><option>1 year</option><option>2 years</option><option>Up to 5 years (serious/aggravating circumstances)</option></select></div>
+      <div class="field"><label for="goodCause">Extension / re-file: why do you still need protection? (“good cause”)</label><textarea id="goodCause" placeholder="e.g. He still drives past my home weekly. I remain afraid because…"></textarea></div>
+    </div>
+  </fieldset>
+
+  <!-- STEP 2 + 3: CHOOSE PACKET, REVIEW -->
+  <fieldset>
+    <legend>Step 2 · Pick your packet — Step 3 · Review before you print</legend>
+    <div class="field"><label>Which paperwork packet should I build?</label>
+      <div class="toggles" id="packetToggles" role="group" aria-label="Packet type">
+        <button type="button" class="toggle" data-packet="first" aria-pressed="true">First filing — Form 8-2 / GF-17 petition</button>
+        <button type="button" class="toggle" data-packet="extend" aria-pressed="false">Extension — GF-10 + GF-10a</button>
+        <button type="button" class="toggle" data-packet="refile" aria-pressed="false">Re-filing — new Form 8-2</button>
+        <button type="button" class="toggle" data-packet="violation" aria-pressed="false">Violation — GF-8</button>
+      </div>
+      <p class="hint">Tip: this follows the path you picked above — change it any time; your answers stay put.</p>
+    </div>
+    <div id="reviewBox">
+      <p style="color:var(--ink2)">Your review list appears here. Check each line against your official paperwork — names spelled exactly right, dates right, file number right — then use “Fix” to jump back and correct anything before you build the packet.</p>
+    </div>
+    <div class="draft-actions">
+      <button class="btn" id="buildPacketBtn" type="button">Build my packet (Step 4)</button>
+      <span class="statusline" id="reviewStatus" role="status"></span>
+    </div>
+  </fieldset>
+
+  <!-- STEP 4: PACKET OUTPUT -->
+  <div class="card" id="packetCard">
+    <h3 style="font-size:22px;margin-bottom:6px">Step 4 · Your packet</h3>
+    <p style="color:var(--ink2);margin-top:0">The packet starts with a <strong>cover checklist</strong> (what's inside, what to bring, what to sign), then the filled draft. <strong>Important:</strong> courts want the official blank forms — copy your draft onto the official Form 8-2 / GF-10 / GF-8 (free at the courthouse or from NY Courts online), or bring this printout and let the clerk help you transfer it. Never sign a sworn form until the clerk or notary tells you to.</p>
+    <div class="draftout" id="packetOut" tabindex="0">Your built packet will appear here after you press “Build my packet.”</div>
+    <div class="draft-actions">
+      <button class="btn" id="downloadPacketBtn" type="button">Download packet (.txt)</button>
+      <button class="btn secondary" id="copyPacketBtn" type="button">Copy packet text</button>
+      <span class="statusline" id="packetStatus" role="status"></span>
+    </div>
+    <p style="font-size:14.5px;color:var(--muted)">To print or save as a PDF: use your browser's Print command (menu → Print → “Save as PDF”). This page prints cleanly, and the packet text prints with it once built. When you're done, tap “Clear this page” at the top so nothing is left on a shared device.</p>
+    <h4 style="margin:18px 0 4px;font-size:16px">Your evidence checklist (built from your log)</h4>
+    <ul class="checklist" id="evidenceList">
+      <li>Build your packet and this list fills in from your incidents — one line per incident, plus the standard items.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================= WHAT TO SAY AT THE CLERK'S OFFICE ================= -->
+<section id="scripts" aria-labelledby="scripts-h">
+  <div class="sec-head">
+    <h2 id="scripts-h">What to say at the clerk's office</h2>
+    <p>Short, calm, word-for-word lines — filled in with your own details from Step 1. Read them out loud, or just show the clerk your phone. The script follows the packet you picked in Step 2; switch paths above and it rewrites itself.</p>
+  </div>
+  <div class="card">
+    <div class="draftout" id="scriptOut" tabindex="0" aria-live="polite">Your script will appear here — it fills in as you answer Step 1.</div>
+    <div class="draft-actions">
+      <button class="btn secondary" id="copyScriptBtn" type="button">Copy my script</button>
+      <span class="statusline" id="scriptStatus" role="status"></span>
+    </div>
+    <p style="font-size:14.5px;color:var(--muted);margin-bottom:0">If you get flustered or start to cry, that's okay — clerks see it every day. You can hand them your packet and say: <em>“I'm nervous. Could you please read what I brought and tell me what to do next?”</em> That is always enough.</p>
+  </div>
+</section>
+
+<!-- ================= FILE IT ================= -->
+<section id="file" aria-labelledby="file-h">
+  <div class="sec-head">
+    <h2 id="file-h">Step 5 · File it — Monroe County Family Court</h2>
+    <p>You've got the packet. Filing itself is something you do — in person (best if you need protection today) or online. Either way it's free.</p>
+  </div>
+  <div class="grid-cards">
+    <div class="card">
+      <h3 style="font-size:21px;margin-bottom:8px">In person (recommended for same-day protection)</h3>
+      <p style="margin:0 0 6px"><strong>Monroe County Family Court</strong><br/>Hall of Justice, 3rd Floor, Room 360<br/>99 Exchange Blvd, Rochester, NY 14614<br/>Mon–Fri, 9:00 a.m.–5:00 p.m. · Phone: <a href="tel:+15853713544">585-371-3544</a> · Email: monroefamilycourt@nycourts.gov</p>
+      <ol class="steps">
+        <li><strong>Go early in the day</strong> if you want to see a judge the same day (§ 154 gives you that right). Bring photo ID if you have it.</li>
+        <li><strong>At security, say:</strong> “I'm here to file a family offense petition.” You'll be directed to the petition/intake area on the 3rd floor.</li>
+        <li><strong>At the clerk's window, say:</strong> “I'd like to file this Family Offense Petition, Form 8-2, and ask for a temporary order of protection today.” For other paths: “…file this motion to extend, GF-10,” or “…file this violation petition, GF-8.”</li>
+        <li><strong>Hand over your packet.</strong> If anything's missing, the clerk can help you fix it on the spot — that's normal, not a rejection. Ask: “Can you check this is complete before I swear to it?”</li>
+        <li><strong>Ask for these free things:</strong> a free lawyer if you can't afford one (“Can I apply for assigned counsel?”), an interpreter if you need one, and to keep your address confidential if being found puts you at risk.</li>
+        <li><strong>See the judge/referee</strong> about a Temporary Order, and get your hearing date and your copies before you leave. Ask: “How will the respondent be served, and how will I know it happened?”</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3 style="font-size:21px;margin-bottom:8px">Online — print-and-file or EDDS</h3>
+      <ol class="steps">
+        <li><strong>Option A — print and bring/mail:</strong> print your packet and the official forms from NY Courts, copy your answers onto the official forms, and bring or mail them to the court address at left. If you need a judge <em>today</em>, go in person instead.</li>
+        <li><strong>Option B — EDDS (the court's online delivery system):</strong> NY Courts' Electronic Document Delivery System lets self-represented people submit Family Court documents as PDFs from home. You create a free account, choose Monroe County Family Court, select the family offense filing, upload your PDFs, and <strong>check the “Filing” box</strong> so the court treats it as a filing request, not just delivery.</li>
+        <li><strong>Watch your email:</strong> the court replies whether your documents were accepted for filing. EDDS delivery is <em>not</em> service on the other person — the court still arranges service.</li>
+        <li><strong>If traveling to court is dangerous or a hardship,</strong> ask Willow or the court about a remote/electronic appearance for a temporary order — NY law allows pilot electronic filing and audio-visual appearances for exactly this situation (§ 153-c). An advocate can help you file from a safe location.</li>
+      </ol>
+      <h3 style="font-size:21px;margin:14px 0 8px">What to bring</h3>
+      <ul class="checklist">
+        <li>Your completed packet + official forms (signed only when told)</li>
+        <li>Photo ID, if you have one (you can still file without it — tell the clerk)</li>
+        <li>Your current Order of Protection, if you have one (extension / violation)</li>
+        <li>Evidence: screenshots, texts, photos, medical papers, police report numbers</li>
+        <li>Your incident log / worksheet from this page</li>
+        <li>Names and addresses of any witnesses, if known</li>
+        <li>A safe mailing address and phone for the court (can be an advocate's)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================= AFTER FILING ================= -->
+<section id="after" aria-labelledby="after-h">
+  <div class="sec-head">
+    <h2 id="after-h">What happens after you file</h2>
+    <p>The same basic sequence for every path. Timelines vary — the court gives you exact dates in writing.</p>
+  </div>
+  <ol class="timeline">
+    <li><h3>The court reviews and you may see a judge the same day</h3><p>For a new or re-filed petition, the judge can issue a Temporary Order of Protection right away (§ 828) based on your sworn petition. For an extension motion or violation petition, you'll get a court date.</p></li>
+    <li><h3>The papers are served — free</h3><p>A sheriff, police officer, or court-arranged server hands the petition and any temporary order to the respondent. The order takes effect once served. You don't do this part, and you shouldn't try.</p></li>
+    <li><h3>The hearing</h3><p>Both sides can tell their story, bring witnesses and evidence, and have a lawyer (free if you qualify). In Family Court you must show the offense is more likely than not (§ 832). For a violation, the court must find the disobedience was willful (§ 846).</p></li>
+    <li><h3>The judge decides</h3><p>Final order (up to 2 years, or 5 with aggravating circumstances, § 842), an extension for a reasonable period, consequences for a violation (up to 6 months in jail per willful violation, § 846-a) — or dismissal if the proof isn't there. You get the decision and paperwork in writing.</p></li>
+    <li><h3>Live with the order — and log everything</h3><p>Keep a copy of the order with you and one at home, work, and your children's school. Keep logging any contact or violations here or on paper — that log is gold if you ever need to extend, re-file, or report a violation.</p></li>
+    <li><h3>Before it expires</h3><p>Set the reminders this page builds (30 / 14 / 7 days out). Extending before the end date is far easier than re-filing after it.</p></li>
+  </ol>
+</section>
+
+<!-- ================= HEARING PREP ================= -->
+<section id="hearing" aria-labelledby="hearing-h">
+  <div class="sec-head">
+    <h2 id="hearing-h">Hearing prep — walk in ready</h2>
+    <p>The hearing is where the judge decides. It is usually short, and judges in Family Court do this every day. Here's what to bring, what will happen, and how to practice telling your story.</p>
+    <span class="srcline">✓ Bring-list and hearing steps checked Nov 5, 2026 — NY Courts guidance · WomensLaw.org · court-practice guides agree (practical guidance, not a statute).</span>
+  </div>
+  <div class="grid-cards">
+    <div class="card">
+      <h3 style="font-size:21px;margin-bottom:8px">Bring this</h3>
+      <ul class="checklist">
+        <li>Photo ID</li>
+        <li>Your copy of the petition and the Temporary Order</li>
+        <li>Your file / docket number (it's on all your paperwork — the clerk and judge will use it)</li>
+        <li>A written, dated timeline of incidents — your incident log from Step 1c, printed</li>
+        <li>Printed evidence, organized oldest-to-newest: texts and emails (dates visible), voicemails saved, photos of injuries or damage with the date written on each, police reports, medical records, and any prior orders</li>
+        <li>Witness names and phone numbers — and the witnesses themselves, if they'll come</li>
+        <li>Two copies of everything printed: one for the judge, one for you (the court may also need one for the other side)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="font-size:21px;margin-bottom:8px">What to expect in the room</h3>
+      <ul class="plain">
+        <li><strong>Both sides testify under oath.</strong> You'll be sworn in — just tell the truth, in your own words.</li>
+        <li><strong>You go first</strong> as the petitioner: what happened, when, where — the judge may ask questions as you go.</li>
+        <li><strong>The respondent gets to respond</strong> and tell their side, and can bring a lawyer. You don't have to argue with them — speak to the judge, not to them.</li>
+        <li><strong>The judge decides by “more likely than not”</strong> (a fair preponderance of the evidence, § 832) — not the criminal standard. Your dated, specific facts and printed evidence are what carry weight.</li>
+        <li><strong>Free lawyer:</strong> if you want one and can't afford one, ask the judge for assigned counsel — you can ask at any appearance, including this one.</li>
+        <li><strong>Don't miss it.</strong> If you don't show up, your case can be dismissed. Running late or unsafe to travel? Call the clerk (585-371-3544) as early as you can and say so.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3 style="font-size:21px;margin-bottom:6px">Practice script — telling the judge what happened</h3>
+    <p style="color:var(--ink2);margin-top:0">Judges listen for short, specific, dated sentences — one fact per sentence. The pattern is: <strong>date → place → what they did or said → what happened next.</strong> Like this:</p>
+    <div class="lawbox"><span class="lawlabel">Say it like this</span><p>“Your Honor, my name is ____. I'm asking for an order of protection against ____, my former partner. <strong>On March 3rd, at my apartment,</strong> he came to my door at 11 p.m. and said, ‘I will kill you if you leave.’ <strong>I called 911.</strong> The officers took a report. <strong>On March 9th,</strong> he sent me 42 texts in one night. I have printed them, with the dates showing. I am afraid he will hurt me, and I'm asking the Court to order him to stay away from me and my children.”</p></div>
+    <p style="color:var(--ink2)">Tips: stick to what you saw and heard — exact words in quotes if you remember them. Skip opinions (“he's crazy”) and give facts (“he punched the wall next to my head”). If you don't remember a date exactly, say “around” the date — don't guess under oath. If you get emotional, pause and breathe; judges expect it and will wait.</p>
+    <div class="draft-actions">
+      <button class="btn secondary" id="buildSpeechBtn" type="button">Build my opening from my answers</button>
+      <span class="statusline" id="speechStatus" role="status"></span>
+    </div>
+    <div class="draftout" id="speechOut" style="margin-top:12px" tabindex="0">Press the button and your opening statement appears here, built from your name, the respondent's name, and your first logged incident. Then read it out loud twice — that's the whole practice.</div>
+  </div>
+</section>
+
+<!-- ================= FREE HUMAN HELP ================= -->
+<section id="help" aria-labelledby="help-h">
+  <div class="sec-head">
+    <h2 id="help-h">Free human help — you don't have to do this alone</h2>
+    <p>Every service below is free and confidential. Advocates can sit with you at court, help with forms, and make a safety plan. Lawyers can advise you about your exact case.</p>
+  </div>
+  <div class="card">
+    <div class="resource"><span class="rname">If you are in danger right now</span><span class="rphone"><a href="tel:911">Call 911</a></span><p>Police can respond, verify an existing order in the statewide registry, and arrest for a violation on the spot.</p></div>
+    <div class="resource"><span class="rname">Willow Domestic Violence Center — Rochester</span><span class="rphone"><a href="tel:+15852227233">585-222-7233</a></span><p>Free, confidential, 24/7 hotline. Safety planning, shelter, and court accompaniment in Monroe County.</p></div>
+    <div class="resource"><span class="rname">Legal Aid Society of Rochester</span><span class="rphone"><a href="tel:+15852324090">585-232-4090</a></span><p>Free legal help, including Family Court Orders of Protection, for people who qualify.</p></div>
+    <div class="resource"><span class="rname">LawNY (Legal Assistance of Western New York)</span><span class="rphone"><a href="tel:+15853252520">585-325-2520</a></span><p>Free civil legal services in the Rochester region.</p></div>
+    <div class="resource"><span class="rname">National Domestic Violence Hotline</span><span class="rphone"><a href="tel:+18007997233">1-800-799-7233</a></span><p>24/7, nationwide. Or text <strong>START</strong> to <strong>88788</strong>. Interpreters available.</p></div>
+    <div class="resource"><span class="rname">Monroe County Family Court clerk</span><span class="rphone"><a href="tel:+15853713544">585-371-3544</a></span><p>Hall of Justice, 3rd Floor Room 360, 99 Exchange Blvd, Rochester, NY 14614. Mon–Fri 9–5. Clerks can explain procedure and hand you free forms — they can't give legal advice, but they can tell you what's missing from a filing.</p></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3 style="font-size:20px;margin-bottom:8px">Official sources used on this page</h3>
+    <ul class="plain" style="margin-bottom:0">
+      <li><a href="https://www.nycourts.gov/new-york-city-family-court/family-offense-forms" target="_blank" rel="noopener">NY Courts — Family Offense Forms explained (Forms 8-2, GF-8, GF-10/GF-10a, GF-5b)</a></li>
+      <li><a href="https://www.nycourts.gov/courts/monroe-county-family-court" target="_blank" rel="noopener">NY Courts — Monroe County Family Court (address, hours, phone)</a></li>
+      <li><a href="https://www.nysenate.gov/legislation/laws/FCT/842" target="_blank" rel="noopener">NY Senate — Family Court Act § 842 (order conditions, duration, extension for good cause)</a></li>
+      <li><a href="https://iappscontent.courts.state.ny.us/NYSCEF/live/edds/eddsUserGuideFamily.html" target="_blank" rel="noopener">NY Courts — EDDS Family User Guide (filing online)</a></li>
+      <li><a href="https://legalatoms.com/ny/order-of-protection/" target="_blank" rel="noopener">LegalAtoms — free guided prep &amp; e-filing of NY Order of Protection forms</a> (a free second option for preparing the official forms)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================= SOURCES & ACCURACY ================= -->
+<section id="sources" aria-labelledby="sources-h">
+  <div class="sec-head">
+    <h2 id="sources-h">Sources &amp; accuracy — where this information comes from</h2>
+    <p>Nothing on this page was made up. The legal information comes from the official sources below, rewritten in plain language. Where the plain words and the official text ever differ, the official text wins.</p>
+  </div>
+  <div class="grid-cards">
+    <div class="card">
+      <h3 style="font-size:21px;margin-bottom:8px">The law itself</h3>
+      <ul class="plain">
+        <li><strong>New York Family Court Act, Article 8</strong> — the statute this whole page is built on, published on the NY Senate's official legislation site. The sections used most: <strong>§ 812</strong> (what counts as a family offense, who can file, Family + Criminal Court shared jurisdiction), <strong>§ 828</strong> (temporary orders), <strong>§§ 841–842</strong> (final orders, conditions, how long they last — 2 years, 5 with aggravating circumstances — and extension for good cause), <strong>§§ 846 / 846-a</strong> (violations and consequences). <a href="https://www.nysenate.gov/legislation/laws/FCT/842" target="_blank" rel="noopener">Read § 842 on nysenate.gov</a> · <a href="https://www.nysenate.gov/legislation/laws/FCT/-CH686" target="_blank" rel="noopener">The full Family Court Act</a></li>
+        <li><strong>New York Penal Law §§ 215.50–215.52</strong> — the criminal contempt crimes for breaking an order (misdemeanor up to felony), also on the NY Senate legislation site.</li>
+        <li><strong>Family Court Act §§ 153-c / 154</strong> — same-day filing and hearing rights, and electronic filing/appearances for temporary orders.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="font-size:21px;margin-bottom:8px">The courts &amp; the official forms</h3>
+      <ul class="plain">
+        <li><strong>NY State Unified Court System (nycourts.gov)</strong> — the official court website. Its family offense forms page explains and provides the real forms used here: <strong>Form 8-2 / GF-17</strong> (Family Offense Petition), <strong>GF-10 + GF-10a</strong> (extension/modification motion and affirmation), <strong>GF-8</strong> (violation petition), <strong>GF-5b</strong> (after-hours temporary order). <a href="https://www.nycourts.gov/new-york-city-family-court/family-offense-forms" target="_blank" rel="noopener">Family Offense Forms — nycourts.gov</a></li>
+        <li><strong>Monroe County Family Court's official page</strong> — the address, room, hours, phone, and email used in the filing steps (Hall of Justice, 99 Exchange Blvd, Room 360, Rochester). <a href="https://www.nycourts.gov/courts/monroe-county-family-court" target="_blank" rel="noopener">Monroe County Family Court — nycourts.gov</a></li>
+        <li><strong>NY Courts EDDS Family User Guide</strong> — how the online filing option actually works. <a href="https://iappscontent.courts.state.ny.us/NYSCEF/live/edds/eddsUserGuideFamily.html" target="_blank" rel="noopener">EDDS guide — nycourts.gov</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3 style="font-size:21px;margin-bottom:8px">Key facts — and the source right next to each</h3>
+    <table class="map">
+      <thead><tr><th>Fact on this page</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Filing, extending, re-filing, and violation petitions in Family Court are free; no lawyer required; service is free</td><td>NY Courts family offense process (nycourts.gov); Family Court Act Article 8</td></tr>
+        <tr><td>First filing uses Form 8-2 (Family Offense Petition); violation uses GF-8; extension uses GF-10 + GF-10a</td><td>NY Courts — Family Offense Forms page</td></tr>
+        <tr><td>A judge can issue a Temporary Order the same day you file</td><td>Family Court Act §§ 828, 154</td></tr>
+        <tr><td>At the hearing you must show the offense is “more likely than not”</td><td>Family Court Act § 832</td></tr>
+        <tr><td>A final order lasts up to 2 years — up to 5 with aggravating circumstances</td><td>Family Court Act § 842 (aggravating circumstances: § 827(a)(vii))</td></tr>
+        <tr><td>An order can be extended before it expires on “good cause” — no new incident required, and a quiet period alone can't be the reason to deny it</td><td>Family Court Act § 842</td></tr>
+        <tr><td>A willful violation in Family Court can mean up to 6 months in jail per violation</td><td>Family Court Act § 846-a</td></tr>
+        <tr><td>Breaking an order is also the crime of criminal contempt</td><td>Penal Law § 215.50 (Class A misdemeanor); §§ 215.51–215.52 (felonies)</td></tr>
+        <tr><td>After-hours emergency orders (GF-5b) last no more than 4 days</td><td>NY Courts — Family Offense Forms page (GF-5b)</td></tr>
+        <tr><td>Court address, hours, and phone for filing in Rochester</td><td>NY Courts — Monroe County Family Court page</td></tr>
+        <tr><td>Local help: Willow (585-222-7233), Legal Aid Society of Rochester (585-232-4090), LawNY (585-325-2520)</td><td>Those organizations' own published contact information</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3 style="font-size:21px;margin-bottom:6px">How each key fact was checked — November 5, 2026</h3>
+    <p style="color:var(--ink2);margin-top:0">Every key fact on this page was checked against <strong>three kinds of sources</strong>: (1) the <strong>NY State Unified Court System</strong> (nycourts.gov), (2) the <strong>Family Court Act text</strong> on the NY Senate legislation site, and (3) a <strong>trusted legal-aid source</strong> — <a href="https://www.womenslaw.org/node/36030/all" target="_blank" rel="noopener">WomensLaw.org's New York pages</a> (a project of the National Network to End Domestic Violence), the Sanctuary for Families legal memo on extensions, and Legal Aid–referenced court guides. A fact is only shown as <strong>Confirmed</strong> when at least two official/trusted sources agree. Anything weaker is flagged, not hidden.</p>
+    <table class="map">
+      <thead><tr><th>Key fact</th><th>Checked against</th><th>Status · Nov 5, 2026</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Free to file</strong> — no filing fee in Family Court</td><td>NY Courts · WomensLaw.org · court guides citing NY Courts</td><td><strong>✓ Confirmed</strong> — 3 sources agree</td></tr>
+        <tr><td><strong>No lawyer needed</strong> — you can file yourself; court staff can help with forms; free assigned counsel if you qualify</td><td>NY Courts · WomensLaw.org · Family Court Act (right to counsel provisions)</td><td><strong>✓ Confirmed</strong> — 3 sources agree</td></tr>
+        <tr><td><strong>Form numbers</strong> — 8-2 / GF-17 petition, GF-10 + GF-10a extension, GF-8 violation, GF-5b after-hours</td><td>NY Courts forms page · NY Courts forms index · LegalAtoms form list</td><td><strong>✓ Confirmed</strong> — 3 sources agree</td></tr>
+        <tr><td><strong>Durations</strong> — final order up to 2 years; up to 5 with aggravating circumstances</td><td>Family Court Act § 842 (statute text) · WomensLaw.org · NY Courts</td><td><strong>✓ Confirmed</strong> — 3 sources agree</td></tr>
+        <tr><td><strong>Extension rules</strong> — file before expiration, “good cause,” no new incident required, quiet period alone can't justify denial</td><td>Family Court Act § 842 (statute text) · NY Courts (GF-10/GF-10a forms) · Sanctuary for Families legal memo &amp; case law</td><td><strong>✓ Confirmed</strong> — 3 sources agree</td></tr>
+        <tr><td><strong>Family Court vs. Criminal Court</strong> — both can issue orders; Family Court is civil, you file it, “more likely than not” standard</td><td>Family Court Act §§ 812, 832 · WomensLaw.org · NY Courts</td><td><strong>✓ Confirmed</strong> — 3 sources agree</td></tr>
+        <tr><td><strong>What to bring to the hearing</strong> — ID, petition &amp; temporary order, file number, dated timeline, printed evidence in date order, witnesses</td><td>NY Courts filing/hearing guidance · WomensLaw.org · court-practice guides</td><td><strong>✓ Confirmed as guidance</strong> — 3 sources agree; it's practical guidance, not a statute, and a judge can ask for more or less</td></tr>
+        <tr><td><strong>After-hours emergency orders last no more than 4 days</strong></td><td>NY Courts (GF-5b) · WomensLaw.org</td><td><strong>✓ Confirmed</strong> — 2 official/trusted sources agree</td></tr>
+        <tr style="background:var(--warn-bg)"><td><strong>Online filing cost</strong> — this page says EDDS filing is free</td><td>NY Courts and most sources say no fee — but one form-prep site (LegalAtoms) mentions a “small fee for filing online”</td><td><strong>⚠ Check with the court / Legal Aid — sources disagree.</strong> If any screen ever asks you to pay to file, stop and call the clerk (585-371-3544) before paying anything.</td></tr>
+        <tr style="background:var(--warn-bg)"><td><strong>How free service of the papers is arranged</strong> in Monroe County specifically</td><td>Federal law (VAWA) bars service fees for these orders, and NY practice is that petitioners aren't charged — but the exact arrangement (sheriff vs. police vs. court server) is set locally</td><td><strong>⚠ Check with the court / Legal Aid</strong> — you should not be charged; ask the clerk who will serve and how you'll be told it happened.</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:14.5px;color:var(--muted);margin-bottom:0">Checked November 5, 2026. Laws and forms change — a “Confirmed” here means confirmed against the sources above on that date, not guaranteed forever. When in doubt, the clerk and Legal Aid win.</p>
+  </div>
+  <div class="notlawyer" role="note" style="max-width:none;margin-top:14px">
+    <strong>Please read this before you file.</strong> This page gives <em>general legal information</em> about New York Orders of Protection. It is <strong>not legal advice</strong>, it is <strong>not a lawyer</strong>, and using it does not create a lawyer–client relationship. Every situation is different, and plain-language summaries leave out details that might matter in yours. <strong>Laws and court forms can change</strong> — this page was prepared and checked against the sources above on <strong>November 5, 2026</strong>, and it is a prototype. Before you file, verify your forms and steps with the <strong>Monroe County Family Court clerk (585-371-3544)</strong> or a <strong>free legal aid lawyer or advocate</strong> (Legal Aid Society of Rochester, LawNY, or Willow — all free, listed above). If anything here conflicts with what the court tells you, follow the court.
+  </div>
+</section>
+
+<footer>
+  <p><strong>Order of Protection Helper — prototype for Monroe County, NY.</strong> This page gives legal information, not legal advice, and it is not a lawyer. It does not file anything, serve anything, or decide anything — only Monroe County Family Court can do that. Laws and court procedures change; confirm details with the court clerk or a free legal aid lawyer. If anything on this page conflicts with what the court tells you, follow the court.</p>
+  <p>Your answers are auto-saved only in this browser, on this device — not on a server, not shared with anyone, and not tracked. They stay saved on this device until you press “Clear my answers.” To move your work to another device, use “Download My Progress” in the Save &amp; Resume box and re-upload the file there. If this device isn't safe, erase your answers and tap “Quick exit.”</p>
+</footer>
+</div><!-- /wrap -->
+
+<script>
+(function(){
+"use strict";
+function $(id){ return document.getElementById(id); }
+function val(id){ var el=$(id); return el ? (el.value||"").trim() : ""; }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function orBlank(s, ph){ return s ? s : ph; }
+
+/* ---------- safety: quick exit + clear ---------- */
+$("quickExitBtn").addEventListener("click", function(){
+  window.location.replace("https://www.weather.com/");
+});
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape"){ window.location.replace("https://www.weather.com/"); }
+});
+$("clearPageBtn").addEventListener("click", function(){
+  var fields = document.querySelectorAll("input, select, textarea");
+  for(var i=0;i<fields.length;i++){
+    var f = fields[i];
+    if(f.id === "caseCourt"){ f.value = "Monroe County Family Court"; continue; }
+    if(f.tagName === "SELECT"){ f.selectedIndex = 0; } else { f.value = ""; }
+  }
+  var tog = document.querySelectorAll(".toggle");
+  for(var j=0;j<tog.length;j++){ tog[j].setAttribute("aria-pressed","false"); }
+  setPacket("first", true);
+  selectPath("first", true);
+  resetIncidents();
+  $("packetOut").textContent = "Your built packet will appear here after you press \u201CBuild my packet.\u201D";
+  $("evidenceList").innerHTML = "<li>Build your packet and this list fills in from your incidents \u2014 one line per incident, plus the standard items.</li>";
+  $("chatLog").innerHTML = "";
+  addBotMsg("<p>Page cleared. Nothing you typed is kept anywhere. If you're ready to start again, ask me a question or tap one below.</p>");
+  updateDeadline(); renderReview(); renderScript();
+  window.scrollTo(0,0);
+});
+
+/* ---------- state ---------- */
+var state = { path: "first", packet: "first" };
+var PATH_TO_PACKET = { first:"first", extend:"extend", refile:"refile", violation:"violation" };
+
+/* ---------- path tabs ---------- */
+var tabs = document.querySelectorAll(".pathtab");
+function selectPath(path, silent){
+  state.path = path;
+  for(var i=0;i<tabs.length;i++){
+    var on = tabs[i].getAttribute("data-path") === path;
+    tabs[i].setAttribute("aria-selected", on ? "true" : "false");
+    var panel = $(tabs[i].getAttribute("aria-controls"));
+    if(panel){ panel.hidden = !on; }
+  }
+  setPacket(PATH_TO_PACKET[path] || "first", true);
+  renderReview(); renderScript();
+}
+for(var t=0;t<tabs.length;t++){
+  tabs[t].addEventListener("click", function(){ selectPath(this.getAttribute("data-path")); });
+}
+
+/* ---------- packet toggles (single-select) ---------- */
+var packetBtns = document.querySelectorAll("#packetToggles .toggle");
+function setPacket(p, silent){
+  state.packet = p;
+  for(var i=0;i<packetBtns.length;i++){
+    packetBtns[i].setAttribute("aria-pressed", packetBtns[i].getAttribute("data-packet") === p ? "true" : "false");
+  }
+  if(!silent){ renderReview(); renderScript(); }
+}
+for(var p=0;p<packetBtns.length;p++){
+  packetBtns[p].addEventListener("click", function(){ setPacket(this.getAttribute("data-packet")); });
+}
+
+/* ---------- protection toggles (multi-select) ---------- */
+var protBtns = document.querySelectorAll("#protectionToggles .toggle");
+for(var q=0;q<protBtns.length;q++){
+  protBtns[q].addEventListener("click", function(){
+    var on = this.getAttribute("aria-pressed") === "true";
+    this.setAttribute("aria-pressed", on ? "false" : "true");
+    renderReview(); renderScript();
+  });
+}
+function getProtections(){
+  var out = [];
+  for(var i=0;i<protBtns.length;i++){ if(protBtns[i].getAttribute("aria-pressed") === "true"){ out.push(protBtns[i].textContent.trim()); } }
+  return out;
+}
+
+/* ---------- incidents ---------- */
+var incCount = 0;
+function incidentHTML(n){
+  return '<div class="inc-head"><strong>Incident ' + n + '</strong>' +
+    '<button type="button" class="btn ghost btn-small inc-remove">Remove</button></div>' +
+    '<div class="grid2">' +
+    '<div class="field"><label>Date (best you can remember)</label><input type="date" class="inc-date" /></div>' +
+    '<div class="field"><label>Where did it happen?</label><input type="text" class="inc-place" placeholder="e.g. My apartment, his car, by text" /></div>' +
+    '</div>' +
+    '<div class="field"><label>Kind of incident</label><select class="inc-kind">' +
+    '<option value="Family offense / frightening or harmful conduct">Something that hurt or frightened me</option>' +
+    '<option value="Violation of my existing order">It broke my existing court order</option>' +
+    '<option value="Background / pattern">Background \u2014 part of the pattern</option></select></div>' +
+    '<div class="field"><label>What exactly happened? (their words and actions, injuries, weapons)</label>' +
+    '<textarea class="inc-what" placeholder="Write what happened in your own words, as exactly as you can."></textarea></div>' +
+    '<div class="grid2">' +
+    '<div class="field"><label>Who saw or heard it? (witnesses)</label><input type="text" class="inc-wit" placeholder="Names, or \u201Cno one\u201D" /></div>' +
+    '<div class="field"><label>Evidence you have (texts, photos, police report #)</label><input type="text" class="inc-ev" placeholder="e.g. Screenshots of texts; photo of bruise; RPD report" /></div>' +
+    '</div>';
+}
+function wireIncident(box){
+  var btn = box.querySelector(".inc-remove");
+  btn.addEventListener("click", function(){
+    box.parentNode.removeChild(box);
+    renumberIncidents(); renderReview();
+  });
+  var inputs = box.querySelectorAll("input, select, textarea");
+  for(var i=0;i<inputs.length;i++){ inputs[i].addEventListener("input", renderReview); inputs[i].addEventListener("change", renderReview); }
+}
+function renumberIncidents(){
+  var boxes = document.querySelectorAll("#incidentList .incident");
+  for(var i=0;i<boxes.length;i++){ boxes[i].querySelector(".inc-head strong").textContent = "Incident " + (i+1); }
+  incCount = boxes.length;
+}
+function addIncident(){
+  incCount++;
+  var box = document.createElement("div");
+  box.className = "incident";
+  box.innerHTML = incidentHTML(incCount);
+  $("incidentList").appendChild(box);
+  wireIncident(box);
+  renumberIncidents();
+}
+function resetIncidents(){
+  $("incidentList").innerHTML = "";
+  incCount = 0;
+  addIncident();
+}
+$("addIncidentBtn").addEventListener("click", function(){ addIncident(); renderReview(); });
+function getIncidents(){
+  var boxes = document.querySelectorAll("#incidentList .incident"), out = [];
+  for(var i=0;i<boxes.length;i++){
+    var b = boxes[i];
+    out.push({
+      n: i+1,
+      date: b.querySelector(".inc-date").value,
+      place: b.querySelector(".inc-place").value.trim(),
+      kind: b.querySelector(".inc-kind").value,
+      what: b.querySelector(".inc-what").value.trim(),
+      wit: b.querySelector(".inc-wit").value.trim(),
+      ev: b.querySelector(".inc-ev").value.trim()
+    });
+  }
+  return out.filter(function(x){ return x.date || x.what || x.place; });
+}
+
+/* ---------- case data (typed once, reused everywhere) ---------- */
+function getCase(){
+  return {
+    fileNo: val("caseFileNo"), court: val("caseCourt") || "Monroe County Family Court",
+    judge: val("caseJudge"), orderType: val("caseOrderType"),
+    issued: val("caseIssued"), expires: val("caseExpires"),
+    myName: val("myName"), respName: val("respName"), relationship: val("relationship"),
+    safeContact: val("safeContact"), children: val("childrenInfo"), respWhere: val("respWhere"),
+    extLength: val("extLength"), goodCause: val("goodCause"),
+    protections: getProtections(), incidents: getIncidents()
+  };
+}
+
+/* ---------- deadline math + ICS reminders ---------- */
+function fmtDate(iso){
+  if(!iso){ return ""; }
+  var d = new Date(iso + "T12:00:00");
+  return d.toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
+}
+function addDays(iso, n){
+  var d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return d;
+}
+function updateDeadline(){
+  var box = $("deadlineBox"), btn = $("icsBtn"), exp = val("caseExpires");
+  if(!exp){ box.hidden = true; btn.hidden = true; return; }
+  var today = new Date(); today.setHours(12,0,0,0);
+  var expD = new Date(exp + "T12:00:00");
+  var days = Math.round((expD - today) / 86400000);
+  var txt;
+  if(days < 0){ txt = "<strong>Your order expired on " + esc(fmtDate(exp)) + " (" + Math.abs(days) + " days ago).</strong> An expired order can't be extended \u2014 your path is <strong>Re-file</strong> (a new Form 8-2). Switch to the Re-file path above and build that packet. Filing is still free."; }
+  else if(days === 0){ txt = "<strong>Your order expires TODAY, " + esc(fmtDate(exp)) + ".</strong> If you want it extended, file the GF-10 motion today \u2014 in person is fastest. After today, your path becomes Re-file."; }
+  else if(days <= 30){ txt = "<strong>" + days + " days left</strong> on your order (expires " + esc(fmtDate(exp)) + "). This is the window to extend: build the GF-10/GF-10a packet now and file it before that date. Download the calendar reminders so the deadline can't sneak up on you."; }
+  else { txt = "<strong>" + days + " days left</strong> on your order (expires " + esc(fmtDate(exp)) + "). Plenty of time \u2014 but download the reminders now (30, 14, and 7 days before) so you can start the extension while there's no rush."; }
+  box.innerHTML = txt; box.hidden = false; btn.hidden = false;
+}
+function icsEscape(s){ return String(s).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n"); }
+function icsDate(d){ function p(n){ return (n<10?"0":"")+n; } return d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + "T090000"; }
+$("icsBtn").addEventListener("click", function(){
+  var exp = val("caseExpires"); if(!exp){ return; }
+  var c = getCase();
+  var stamp = new Date().toISOString().replace(/[-:]/g,"").split(".")[0] + "Z";
+  var events = [[30,"Start your extension paperwork"],[14,"File your GF-10 extension motion"],[7,"Last week: confirm your extension is filed"]];
+  var ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Order of Protection Helper//EN\r\n";
+  for(var i=0;i<events.length;i++){
+    var d = addDays(exp, -events[i][0]);
+    ics += "BEGIN:VEVENT\r\nUID:oop-" + events[i][0] + "-" + (c.fileNo||"case").replace(/\s+/g,"") + "@helper\r\nDTSTAMP:" + stamp + "\r\nDTSTART:" + icsDate(d) + "\r\nSUMMARY:" + icsEscape(events[i][1] + " \u2014 order expires " + fmtDate(exp)) + "\r\nDESCRIPTION:" + icsEscape("Order of Protection" + (c.fileNo ? " (File/Docket No. " + c.fileNo + ")" : "") + " at " + c.court + " expires on " + fmtDate(exp) + ". Extension (GF-10/GF-10a) is free and must be filed before it expires.") + "\r\nBEGIN:VALARM\r\nTRIGGER:-PT1H\r\nACTION:DISPLAY\r\nEND:VALARM\r\nEND:VEVENT\r\n";
+  }
+  ics += "END:VCALENDAR\r\n";
+  downloadText(ics, "order-of-protection-reminders.ics", "text/calendar");
+  $("icsStatus").textContent = "Reminders downloaded \u2014 open the file to add them to your calendar.";
+});
+var caseFields = ["caseFileNo","caseCourt","caseJudge","caseOrderType","caseIssued","caseExpires","myName","respName","relationship","safeContact","childrenInfo","respWhere","extLength","goodCause"];
+for(var cf=0; cf<caseFields.length; cf++){
+  (function(id){ var el = $(id); if(el){ el.addEventListener("input", function(){ updateDeadline(); renderReview(); renderScript(); }); el.addEventListener("change", function(){ updateDeadline(); renderReview(); renderScript(); }); } })(caseFields[cf]);
+}
+
+/* ---------- download / copy helpers ---------- */
+function downloadText(text, filename, mime){
+  var blob = new Blob([text], { type: (mime||"text/plain") + ";charset=utf-8" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 800);
+}
+function copyText(text, statusEl, okMsg){
+  function done(){ statusEl.textContent = okMsg; }
+  function fallback(){
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); done(); } catch(e){ statusEl.textContent = "Copy didn't work here \u2014 select the text above and copy it by hand."; }
+    document.body.removeChild(ta);
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done, fallback); } else { fallback(); }
+}
+
+/* ---------- review screen ---------- */
+var PACKET_NAMES = {
+  first: "First filing packet \u2014 Family Offense Petition (Form 8-2 / GF-17)",
+  extend: "Extension packet \u2014 Notice of Motion (GF-10) + Affirmation (GF-10a)",
+  refile: "Re-filing packet \u2014 new Family Offense Petition (Form 8-2)",
+  violation: "Violation packet \u2014 Petition, Violation of Order of Protection (GF-8)"
+};
+function reviewRows(c){
+  var rows = [
+    ["Packet", PACKET_NAMES[state.packet], "packetToggles"],
+    ["File / docket number", c.fileNo || "(none yet \u2014 the court assigns one)", "caseFileNo"],
+    ["Court", c.court, "caseCourt"],
+    ["Judge / referee", c.judge || "(not known \u2014 fine)", "caseJudge"],
+    ["Your name (petitioner)", c.myName || "(blank \u2014 needed)", "myName"],
+    ["Respondent's name", c.respName || "(blank \u2014 needed)", "respName"],
+    ["Relationship", c.relationship || "(blank \u2014 needed)", "relationship"],
+    ["Safe contact for the court", c.safeContact || "(blank)", "safeContact"],
+    ["Children involved", c.children || "(blank)", "childrenInfo"],
+    ["Current order", c.orderType ? (c.orderType + (c.expires ? ", expires " + fmtDate(c.expires) : "")) : "(none)", "caseOrderType"],
+    ["Incidents logged", c.incidents.length ? c.incidents.length + " incident(s)" : "(none yet \u2014 add at least one)", "incidentList"],
+    ["Protection requested", c.protections.length ? c.protections.join("; ") : "(none tapped yet)", "protectionToggles"]
+  ];
+  if(state.packet === "extend" || state.packet === "refile"){
+    rows.push(["Extension length asked", c.extLength || "(not chosen)", "extLength"]);
+    rows.push(["Good cause / why still needed", c.goodCause || "(blank \u2014 this is the heart of an extension)", "goodCause"]);
+  }
+  return rows;
+}
+function renderReview(){
+  var box = $("reviewBox"); if(!box){ return; }
+  var c = getCase();
+  var rows = reviewRows(c);
+  var html = '<table class="map"><thead><tr><th>Item</th><th>Your answer</th><th></th></tr></thead><tbody>';
+  for(var i=0;i<rows.length;i++){
+    html += "<tr><td>" + esc(rows[i][0]) + "</td><td>" + esc(rows[i][1]) + '</td><td><button type="button" class="btn ghost btn-small fix-btn" data-target="' + esc(rows[i][2]) + '">Fix</button></td></tr>';
+  }
+  html += "</tbody></table>";
+  box.innerHTML = html;
+  var btns = box.querySelectorAll(".fix-btn");
+  for(var j=0;j<btns.length;j++){
+    btns[j].addEventListener("click", function(){
+      var target = $(this.getAttribute("data-target"));
+      if(target){ target.scrollIntoView({ behavior:"smooth", block:"center" }); var f = target.querySelector ? (target.querySelector("input,select,textarea,button") || target) : target; setTimeout(function(){ try{ f.focus({ preventScroll:true }); }catch(e){} }, 350); }
+    });
+  }
+}
+
+/* ---------- packet builder ---------- */
+function headerBlock(c, title){
+  var L = [];
+  L.push("============================================================");
+  L.push(title.toUpperCase());
+  L.push("Prepared worksheet \u2014 copy onto the official NY Courts form");
+  L.push("============================================================");
+  L.push("Court:            " + c.court);
+  L.push("File/Docket No.:  " + (c.fileNo || "(court will assign)"));
+  if(c.judge){ L.push("Judge/Referee:    " + c.judge); }
+  L.push("Petitioner:       " + (c.myName || "______________________"));
+  L.push("Respondent:       " + (c.respName || "______________________"));
+  L.push("Relationship:     " + (c.relationship || "______________________"));
+  L.push("Safe contact:     " + (c.safeContact || "______________________"));
+  L.push("Children:         " + (c.children || "none stated"));
+  return L;
+}
+function coverChecklist(c){
+  var L = [];
+  L.push("");
+  L.push("COVER CHECKLIST \u2014 TAKE THIS PACKET TO COURT");
+  L.push("------------------------------------------------------------");
+  L.push("[ ] This worksheet, printed");
+  L.push("[ ] The official form (free at the courthouse / nycourts.gov), filled in from this worksheet");
+  L.push("[ ] Photo ID, if you have one");
+  if(c.orderType || state.packet !== "first"){ L.push("[ ] A copy of my current Order of Protection (File/Docket No. " + (c.fileNo || "___") + ")"); }
+  L.push("[ ] Evidence: screenshots/texts (dates visible), photos, police report numbers, medical papers");
+  L.push("[ ] Witness names and contact info, if any");
+  L.push("[ ] A safe mailing address + phone for the court");
+  L.push("[ ] Do NOT sign sworn pages until the clerk or a notary tells you to");
+  L.push("");
+  L.push("At the court: file at the clerk's office, ask if the paperwork is complete,");
+  L.push("ask how the respondent will be served, and get your court date in writing");
+  L.push("before you leave. Filing is FREE. You may ask for a free assigned lawyer.");
+  return L;
+}
+function incidentsBlock(c, filterKind){
+  var L = [];
+  var list = c.incidents.filter(function(x){ return !filterKind || x.kind === filterKind; });
+  if(!list.length){ L.push("(No incidents logged yet \u2014 add them in Step 1c.)"); return L; }
+  for(var i=0;i<list.length;i++){
+    var x = list[i];
+    L.push("");
+    L.push("Incident " + (i+1) + (x.date ? " \u2014 " + fmtDate(x.date) : " \u2014 date: ____________"));
+    if(x.place){ L.push("Where: " + x.place); }
+    L.push("Type: " + x.kind);
+    L.push("What happened: " + (x.what || "______________________"));
+    if(x.wit){ L.push("Witnesses: " + x.wit); }
+    if(x.ev){ L.push("Evidence: " + x.ev); }
+  }
+  return L;
+}
+function protectionsBlock(c){
+  var L = [""];
+  L.push("PROTECTION ASKED FOR (Family Court Act \u00A7 842):");
+  if(!c.protections.length){ L.push("  (none selected \u2014 choose in Step 1d)"); }
+  for(var i=0;i<c.protections.length;i++){ L.push("  - " + c.protections[i]); }
+  return L;
+}
+function buildPacketText(){
+  var c = getCase();
+  var L = [];
+  if(state.packet === "first"){
+    L = L.concat(headerBlock(c, "Family Offense Petition \u2014 Form 8-2 / GF-17 (first filing)"));
+    L.push(""); L.push("Proceeding under Article 8 of the Family Court Act.");
+    L.push("Petitioner respectfully alleges that the Respondent committed family");
+    L.push("offense(s) against Petitioner as follows:");
+    L = L.concat(incidentsBlock(c, null));
+    L = L.concat(protectionsBlock(c));
+    L.push(""); L.push("Petitioner asks the Court for a Temporary Order of Protection today");
+    L.push("(Family Court Act \u00A7 828) and, after a hearing, a final Order of Protection.");
+  } else if(state.packet === "extend"){
+    L = L.concat(headerBlock(c, "Motion to Extend Order of Protection \u2014 GF-10 + Affirmation GF-10a"));
+    L.push("");
+    L.push("EXISTING ORDER:");
+    L.push("  Type:    " + (c.orderType || "______________________"));
+    L.push("  Issued:  " + (c.issued ? fmtDate(c.issued) : "______________________"));
+    L.push("  Expires: " + (c.expires ? fmtDate(c.expires) : "______________________"));
+    L.push("  Extension requested: " + (c.extLength || "a reasonable period"));
+    L.push("");
+    L.push("AFFIRMATION IN SUPPORT (GF-10a) \u2014 GOOD CAUSE (Family Court Act \u00A7 842):");
+    L.push(c.goodCause || "(Write why you still need protection \u2014 Step 1d. Good cause does not require new abuse; a quiet period alone cannot be the reason to deny.)");
+    L.push("");
+    L.push("Relevant incidents / contact since the order was issued:");
+    L = L.concat(incidentsBlock(c, null));
+    L = L.concat(protectionsBlock(c));
+  } else if(state.packet === "refile"){
+    L = L.concat(headerBlock(c, "Family Offense Petition \u2014 Form 8-2 (re-filing after expiration / dismissal)"));
+    L.push("");
+    L.push("PRIOR CASE: An Order of Protection was previously issued in this matter");
+    L.push("(File/Docket No. " + (c.fileNo || "___") + ", issued " + (c.issued ? fmtDate(c.issued) : "___") + ", expired " + (c.expires ? fmtDate(c.expires) : "___") + ").");
+    L.push("Petitioner files a NEW petition based on the following recent incidents");
+    L.push("and ongoing threat, with the earlier history as background:");
+    L = L.concat(incidentsBlock(c, null));
+    if(c.goodCause){ L.push(""); L.push("Why protection is still needed:"); L.push(c.goodCause); }
+    L = L.concat(protectionsBlock(c));
+    L.push(""); L.push("Petitioner asks for a Temporary Order today (\u00A7 828) and a final order after a hearing.");
+  } else {
+    L = L.concat(headerBlock(c, "Petition \u2014 Violation of Order of Protection \u2014 GF-8"));
+    L.push("");
+    L.push("ORDER ALLEGEDLY VIOLATED:");
+    L.push("  Type:    " + (c.orderType || "______________________"));
+    L.push("  Issued:  " + (c.issued ? fmtDate(c.issued) : "______________________"));
+    L.push("  Expires: " + (c.expires ? fmtDate(c.expires) : "______________________"));
+    L.push("");
+    L.push("VIOLATION(S) \u2014 what the Respondent did that the order forbids");
+    L.push("(Family Court Act \u00A7 846; criminal contempt: Penal Law \u00A7\u00A7 215.50\u2013215.52):");
+    var viol = incidentsBlock(c, "Violation of my existing order");
+    if(viol.length === 1 && viol[0].indexOf("No incidents") === 0){
+      L.push("(Tip: in Step 1c, set the incident's \u201CKind\u201D to \u201CIt broke my existing court order.\u201D Showing all logged incidents below.)");
+      L = L.concat(incidentsBlock(c, null));
+    } else { L = L.concat(viol); }
+    L.push("");
+    L.push("Petitioner asks the Court to enforce the order, extend or strengthen it,");
+    L.push("and impose the consequences provided by law for a willful violation (\u00A7 846-a).");
+  }
+  L.push("");
+  L.push("------------------------------------------------------------");
+  L.push("Sworn signature: sign the OFFICIAL form only when the clerk or a notary");
+  L.push("tells you to. This worksheet was prepared with the Order of Protection");
+  L.push("Helper. It is legal information, not legal advice.");
+  L = L.concat(coverChecklist(c));
+  return L.join("\n");
+}
+function buildEvidence(c){
+  var items = [
+    "Photo ID",
+    "A copy of your petition and any Temporary Order (bring to every court date)",
+    "File / docket number: " + (c.fileNo || "write it here once the court assigns it")
+  ];
+  for(var i=0;i<c.incidents.length;i++){
+    var x = c.incidents[i];
+    items.push("Incident " + (i+1) + (x.date ? " (" + fmtDate(x.date) + ")" : "") + ": " + (x.ev ? "save/print \u2014 " + x.ev : "note any texts, photos, or recordings and print them with dates showing") + (x.wit ? "; witness: " + x.wit + " (bring name + phone)" : ""));
+  }
+  items.push("Screenshots printed with dates and the sender's number/name visible \u2014 keep the originals on your phone too");
+  items.push("Photos of injuries or damage, with the date each was taken written on the back");
+  items.push("Police report numbers and medical records, if any");
+  items.push("Any prior orders of protection");
+  return items;
+}
+var lastPacketText = "";
+$("buildPacketBtn").addEventListener("click", function(){
+  var c = getCase();
+  lastPacketText = buildPacketText();
+  $("packetOut").textContent = lastPacketText;
+  var ev = buildEvidence(c);
+  var html = "";
+  for(var i=0;i<ev.length;i++){ html += "<li>" + esc(ev[i]) + "</li>"; }
+  $("evidenceList").innerHTML = html;
+  $("reviewStatus").textContent = "Packet built below. Read it top to bottom once \u2014 names and dates especially \u2014 then download or print it.";
+  $("packetCard").scrollIntoView({ behavior:"smooth", block:"start" });
+});
+$("downloadPacketBtn").addEventListener("click", function(){
+  if(!lastPacketText){ lastPacketText = buildPacketText(); $("packetOut").textContent = lastPacketText; }
+  downloadText(lastPacketText, "order-of-protection-packet.txt");
+  $("packetStatus").textContent = "Packet downloaded as a text file.";
+});
+$("copyPacketBtn").addEventListener("click", function(){
+  if(!lastPacketText){ lastPacketText = buildPacketText(); $("packetOut").textContent = lastPacketText; }
+  copyText(lastPacketText, $("packetStatus"), "Packet copied \u2014 you can paste it into a document or message.");
+});
+
+
+/* ---------- clerk's-office script (auto-filled) ---------- */
+function renderScript(){
+  var out = $("scriptOut"); if(!out){ return; }
+  var c = getCase();
+  var me = c.myName || "____ (your name)";
+  var resp = c.respName || "____ (their name)";
+  var L = [];
+  if(state.packet === "first"){
+    L.push("WHEN YOU WALK IN (front desk / security):");
+    L.push("\u201CHi, I'm here to file a family offense petition and ask for an order of protection.\u201D");
+    L.push("");
+    L.push("AT THE CLERK'S WINDOW:");
+    L.push("\u201CMy name is " + me + ". I'd like to file this Family Offense Petition, Form 8-2, against " + resp + ".\u201D");
+    L.push("\u201CI'm also asking for a temporary order of protection today, please.\u201D");
+  } else if(state.packet === "extend"){
+    L.push("WHEN YOU WALK IN (front desk / security):");
+    L.push("\u201CHi, I'm here to file a motion about my order of protection.\u201D");
+    L.push("");
+    L.push("AT THE CLERK'S WINDOW:");
+    L.push("\u201CMy name is " + me + ". I'd like to file a motion to extend my order of protection \u2014 forms GF-10 and GF-10a.\u201D");
+    L.push("\u201CMy file number is " + (c.fileNo || "____") + ". My order expires on " + (c.expires ? fmtDate(c.expires) : "____") + ", so I need to file before that date.\u201D");
+  } else if(state.packet === "refile"){
+    L.push("WHEN YOU WALK IN (front desk / security):");
+    L.push("\u201CHi, I'm here to file a family offense petition. I had an order before.\u201D");
+    L.push("");
+    L.push("AT THE CLERK'S WINDOW:");
+    L.push("\u201CMy name is " + me + ". I'd like to file a new Family Offense Petition, Form 8-2, against " + resp + ".\u201D");
+    L.push("\u201CI had an order before \u2014 file number " + (c.fileNo || "____") + " \u2014 it " + (c.expires ? "expired on " + fmtDate(c.expires) : "already ended") + ", and new things have happened since.\u201D");
+    L.push("\u201CI'm asking for a temporary order of protection today, please.\u201D");
+  } else {
+    var v = null;
+    for(var i=0;i<c.incidents.length;i++){ if(c.incidents[i].kind === "Violation of my existing order"){ v = c.incidents[i]; break; } }
+    if(!v && c.incidents.length){ v = c.incidents[0]; }
+    L.push("WHEN YOU WALK IN (front desk / security):");
+    L.push("\u201CHi, I'm here to file a violation petition \u2014 the person broke my order of protection.\u201D");
+    L.push("");
+    L.push("AT THE CLERK'S WINDOW:");
+    L.push("\u201CMy name is " + me + ". I'd like to file a violation petition, Form GF-8. My file number is " + (c.fileNo || "____") + ".\u201D");
+    L.push("\u201COn " + (v && v.date ? fmtDate(v.date) : "____ (date)") + ", " + resp + " " + (v && v.what ? v.what.charAt(0).toLowerCase() + v.what.slice(1) : "broke the order") + ".\u201D");
+    L.push("\u201CIf I'm in danger before the court date, what should I do? I know I can call 911 \u2014 please tell me if there's anything else.\u201D");
+  }
+  L.push("");
+  L.push("CHECKING YOUR PAPERWORK (always ask this):");
+  L.push("\u201CCould you please check \u2014 is my paperwork complete? Is anything missing or in the wrong place?\u201D");
+  L.push("\u201CShould I sign this now, in front of you?\u201D");
+  L.push("");
+  L.push("ASK FOR FREE HELP (if you want it):");
+  L.push("\u201CI can't afford a lawyer. Can I apply for a free assigned lawyer?\u201D");
+  L.push("\u201CCan I keep my address confidential, so it isn't given to the other person?\u201D");
+  L.push("");
+  L.push("BEFORE YOU LEAVE, ASK:");
+  L.push("\u201CWhat is my court date, and can I get it in writing?\u201D");
+  L.push("\u201CHow will " + resp + " be served, and how will I know it happened?\u201D");
+  L.push("\u201CWhat should I bring to the hearing?\u201D");
+  L.push("\u201CIf something happens before the hearing, what number do I call?\u201D");
+  out.textContent = L.join("\n");
+}
+$("copyScriptBtn").addEventListener("click", function(){
+  copyText($("scriptOut").textContent, $("scriptStatus"), "Script copied \u2014 keep it on your phone for the courthouse.");
+});
+
+/* ---------- hearing practice: build my opening ---------- */
+$("buildSpeechBtn").addEventListener("click", function(){
+  var c = getCase();
+  var me = c.myName || "____";
+  var resp = c.respName || "____";
+  var rel = c.relationship ? c.relationship.toLowerCase() : "the respondent";
+  var first = c.incidents.length ? c.incidents[0] : null;
+  var lines = [];
+  lines.push("\u201CYour Honor, my name is " + me + ". I'm asking for an order of protection against " + resp + " \u2014 " + rel + ".\u201D");
+  if(first){
+    lines.push("\u201COn " + (first.date ? fmtDate(first.date) : "____ (date)") + (first.place ? ", at " + first.place : "") + ", " + (first.what || "____ (say exactly what they did or said, in one or two short sentences)") + ".\u201D");
+  } else {
+    lines.push("(Add at least one incident in Step 1c and this paragraph builds itself: date, place, exactly what they did or said.)");
+  }
+  lines.push("\u201CI have printed my evidence, with the dates showing, and I can answer any questions.\u201D");
+  var ask = c.protections.length ? c.protections.join("; ").toLowerCase() : "an order that keeps me and my family safe";
+  lines.push("\u201CI am afraid of what will happen without the Court's help, and I'm asking the Court for: " + ask + ".\u201D");
+  $("speechOut").textContent = lines.join("\n\n");
+  $("speechStatus").textContent = "Read it out loud twice, slowly. Short sentences. Dates first. That's the whole practice.";
+});
+
+/* ---------- ask a question ---------- */
+var ANSWERS = [
+{ k:["violat","broke the order","breaks the order","texted me","called me anyway","came to my house","showed up","won't stop contacting","ignoring the order"], a:
+"<p><strong>If they broke the order, treat it as both an emergency option and a court option \u2014 you can use both.</strong></p><p class='lawline'><strong>The law, simply:</strong> Breaking an order is a crime even if nobody is touched \u2014 a forbidden text counts. Police can arrest for criminal contempt (Penal Law \u00A7 215.50; worse violations are felonies under \u00A7\u00A7 215.51\u2013215.52). In Family Court, a willful violation can mean up to 6 months in jail per violation and a longer/stronger order (Family Court Act \u00A7\u00A7 846, 846-a). The order binds them, not you \u2014 you can't violate your own order.</p><ol><li>If it's happening now or you feel unsafe, call <strong>911</strong> and say: \u201CI have an Order of Protection and the person is violating it.\u201D</li><li>Screenshot everything with dates showing. Don't delete the thread.</li><li>Write it in the incident log below (Step 1c) while it's fresh \u2014 set the kind to \u201CIt broke my existing court order.\u201D</li><li>Build the <strong>Violation packet (GF-8)</strong> in Step 2 and file it at Monroe County Family Court, 99 Exchange Blvd, 3rd Floor.</li><li>Go to the violation hearing with your printed evidence.</li></ol><p><strong>Your next step:</strong> screenshot it, then log it. Two minutes, done now.</p>" },
+{ k:["renew","extend","expir","extension"], a:
+"<p><strong>Renewing is called \u201Cextending,\u201D and timing is everything: you must ask before the expiration date printed on your order.</strong></p><p class='lawline'><strong>The law, simply:</strong> Family Court Act \u00A7 842 lets the court extend an order for a reasonable time on \u201Cgood cause.\u201D You do <em>not</em> need a new incident, and the judge can't deny it just because things were quiet \u2014 quiet usually means the order is working. It costs $0.</p><ol><li>Find the expiration date on your order. If it's already passed, you need the Re-file path instead \u2014 an expired order can't be extended.</li><li>Enter your file number and expiration date in Step 1a below \u2014 the page counts your days left and builds calendar reminders.</li><li>Write your good-cause reason in Step 1d: why you still need protection.</li><li>Build the <strong>Extension packet (GF-10 + GF-10a)</strong> in Step 2, review it, and download/print it.</li><li>File it at Monroe County Family Court (in person or via EDDS) and have it served \u2014 the clerk will tell you how. Your current order stays in effect while the judge decides.</li></ol><p><strong>Your next step:</strong> check the date on your order right now. Within 30 days? Start Step 1a today.</p>" },
+{ k:["expired","ran out","dismissed","denied","missed my court","missed court","start over","again"], a:
+"<p><strong>If the order already expired or the case was dismissed, you file fresh \u2014 it's called re-filing, and it's still free.</strong></p><p class='lawline'><strong>The law, simply:</strong> An expired order can't be revived, so you file a new Family Offense Petition (Form 8-2) under Family Court Act Article 8. The judge needs a family offense (\u00A7 812), so lead with new incidents, new threats, or ongoing contact \u2014 and include the earlier history and the old order as background.</p><ol><li>Log anything new since the order ended in Step 1c \u2014 even one text counts.</li><li>Enter your old file number in Step 1a if you have it (the court can also find its own records).</li><li>Build the <strong>Re-filing packet</strong> in Step 2 and review every line.</li><li>File at Monroe County Family Court and ask for a Temporary Order the same day if you need protection now.</li><li>Free service, then your hearing \u2014 same as a first filing.</li></ol><p><strong>Your next step:</strong> log the most recent thing that happened. That entry is the heart of your re-filing.</p>" },
+{ k:["cost","fee","free","pay","afford","money","charge"], a:
+"<p><strong>It's free. Family Court charges $0 to file, extend, re-file, or report a violation</strong> \u2014 no filing fee, no lawyer required, and serving the papers is free too.</p><p class='lawline'><strong>Watch the one exception:</strong> divorce and other civil cases in <em>Supreme Court</em> are a different court and can have fees. Everything in Family Court on this page is free. And if you can't afford a lawyer, you may qualify for a court-assigned lawyer at no cost \u2014 ask the judge or clerk.</p><ol><li>Don't let money stop you \u2014 pick your path at the top of this page.</li><li>Do the interview below (Step 1) \u2014 it's all you need to prep the paperwork.</li><li>Build and print your packet (Steps 2\u20134).</li><li>File it in person or online (Step 5) \u2014 $0 at the window.</li></ol><p><strong>Your next step:</strong> start Step 1. The only cost is the trip or the printer paper.</p>" },
+{ k:["lawyer","attorney","represent","assigned counsel","legal aid"], a:
+"<p><strong>You do not need a lawyer to file \u2014 most people in Family Court start without one. But free lawyers exist, and you can ask for one.</strong></p><p class='lawline'><strong>The law, simply:</strong> In family offense cases, the court can assign a lawyer free of charge to a person who can't afford one. Free help also exists outside court: Legal Aid Society of Rochester (585-232-4090) and LawNY (585-325-2520) handle these cases at no cost, and Willow advocates (585-222-7233) can go to court with you \u2014 advocates aren't lawyers, but they know this process cold.</p><ol><li>Keep prepping your packet here \u2014 a lawyer or advocate can use it immediately.</li><li>Call Legal Aid or Willow before your hearing if you can.</li><li>At any court appearance, you can say to the judge: \u201CI can't afford a lawyer. Can I apply for assigned counsel?\u201D</li><li>Bring your packet and evidence to whoever helps you.</li></ol><p><strong>Your next step:</strong> call Willow at 585-222-7233 \u2014 free, confidential, 24/7.</p>" },
+{ k:["how do i file","how to file","start","get an order","get one","apply","first time","never filed","begin"], a:
+"<p><strong>Filing starts with one form and one trip (or one online submission). You can do this.</strong></p><p class='lawline'><strong>The law, simply:</strong> You file a Family Offense Petition (Form 8-2) under Family Court Act Article 8, saying the other person \u2014 a spouse/ex, relative, co-parent, or dating partner (\u00A7 812) \u2014 committed a family offense. A judge can give you a Temporary Order the same day (\u00A7 828). No fee, no police report needed first.</p><ol><li>Write what happened in the incident log (Step 1c below) \u2014 dates, places, exact words.</li><li>Finish the interview (Steps 1a\u20131d) and build the <strong>First filing packet</strong> in Step 2.</li><li>Review every answer (Step 3), then download/print the packet (Step 4).</li><li>File at Monroe County Family Court, Hall of Justice, 3rd Floor Room 360, 99 Exchange Blvd, Rochester \u2014 go in the morning for a same-day judge. Or submit online through EDDS (Step 5 explains both).</li><li>Use the clerk's-office script on this page \u2014 it tells you exactly what to say.</li></ol><p><strong>Your next step:</strong> scroll to Step 1c and write the first incident. Everything else builds on it.</p>" },
+{ k:["temporary","emergency","tonight","right now","today","immediate","after hours","weekend","closed"], a:
+"<p><strong>Protection can start today \u2014 that's exactly what a Temporary Order is for.</strong></p><p class='lawline'><strong>The law, simply:</strong> Family Court Act \u00A7 828 lets a judge issue a Temporary Order the same day you file, based on your petition alone. You have the right to file and be heard the same day or the next day court is open (\u00A7 154). If Family Court is closed, police can help you reach a Criminal Court judge for a short emergency order (Form GF-5b) lasting up to 4 days \u2014 you then go to Family Court before it runs out.</p><ol><li>If you are in danger right now: <strong>911 first</strong>, paperwork after.</li><li>If court is open (Mon\u2013Fri 9\u20135): prep fast \u2014 even a rough incident log \u2014 and go to 99 Exchange Blvd, 3rd Floor, as early as you can.</li><li>Say at the window: \u201CI need to file a family offense petition and ask for a temporary order today.\u201D</li><li>If court is closed: call police non-emergency or 911 and ask about an emergency temporary order (GF-5b).</li><li>Remember: the temporary order counts once it's been served on the other person \u2014 ask the clerk how service will happen.</li></ol><p><strong>Your next step:</strong> if it's business hours, go today. The script section tells you what to say.</p>" },
+{ k:["serv","deliver","papers handed","handed the papers","gets the papers"], a:
+"<p><strong>You don't serve the papers \u2014 and you shouldn't try. The court arranges it, free.</strong></p><p class='lawline'><strong>The law, simply:</strong> An order protects you once the respondent has been formally handed (\u201Cserved\u201D with) the petition and order. Service is done by a sheriff, police officer, or court-arranged server at no cost to you. Until service happens, police may not be able to enforce the order \u2014 which is why giving the court a good address for the respondent (Step 1b) helps.</p><ol><li>When you file, ask the clerk: \u201CHow will the respondent be served, and how will I know it happened?\u201D</li><li>Give the court the best address/workplace you have for them \u2014 it's in your packet if you filled in Step 1b.</li><li>Keep your copy of the order with you; if they approach you before service, call 911 and tell officers service is pending.</li><li>If service keeps failing, tell the clerk \u2014 the court has other ways to complete it.</li></ol><p><strong>Your next step:</strong> write down where they can be found, in Step 1b of the interview.</p>" },
+{ k:["hearing","court date","what happens in court","judge","testify","nervous","scared of court"], a:
+"<p><strong>The hearing is short, structured, and built for people without lawyers. The Hearing Prep section on this page walks you through it.</strong></p><p class='lawline'><strong>The law, simply:</strong> Both sides testify under oath. In Family Court you must show the offense is \u201Cmore likely than not\u201D (Family Court Act \u00A7 832) \u2014 a lower bar than criminal court. The judge can ask questions, the respondent can respond, and then the judge decides.</p><ol><li>Bring: photo ID, your petition + temporary order, your file number, your dated timeline, printed evidence in date order, and witness names/phones.</li><li>Practice with the script in Hearing Prep: date \u2192 place \u2192 what they did or said \u2192 what happened next. One fact per sentence.</li><li>Speak to the judge, not the other person. If you don't know or don't remember, say so \u2014 never guess under oath.</li><li>You can ask the judge for a free assigned lawyer at the hearing itself.</li><li>Never just skip it \u2014 a missed hearing can get your case dismissed. If you can't make it, call the clerk (585-371-3544) early and say why.</li></ol><p><strong>Your next step:</strong> open the Hearing Prep section and press \u201CBuild my opening from my answers.\u201D</p>" },
+{ k:["evidence","proof","prove","photos","texts","messages","record","screenshot"], a:
+"<p><strong>Specific and dated beats long and emotional. Judges act on facts they can check.</strong></p><p class='lawline'><strong>The law, simply:</strong> You must show the family offense is more likely than not (\u00A7 832). Texts, photos, recordings, police and medical records, and witnesses are all usable in Family Court \u2014 print them, with dates, and keep originals on your phone.</p><ol><li>Screenshot messages with the date and their name/number visible. Don't edit or crop out context.</li><li>Photograph injuries and damage the same day; write the date on each printout.</li><li>Save voicemails and note every police report number.</li><li>Log each incident in Step 1c \u2014 this page turns your log into an evidence checklist automatically when you build your packet.</li><li>Bring two printed copies of everything, organized oldest to newest.</li></ol><p><strong>Your next step:</strong> pick your strongest incident and make sure its evidence is saved in two places.</p>" },
+{ k:["child","kid","custody","visitation","school"], a:
+"<p><strong>Yes \u2014 an order can protect your children too, and can set safe custody and pickup rules while it's in place.</strong></p><p class='lawline'><strong>The law, simply:</strong> Family Court Act \u00A7 842 lets a judge include children as protected persons, order the respondent to stay away from them and their school, and set temporary custody/visitation conditions that keep exchanges safe. Tell the court about the children in your petition \u2014 that's Step 1b below.</p><ol><li>List the children (names/ages) in Step 1b of the interview.</li><li>In your incident log, note every incident the children saw, heard, or were part of.</li><li>In Step 1d, tap the protections about children, their school, and safe custody/visitation.</li><li>Give a copy of the final order to the children's school and childcare, and tell them who may and may not pick the children up.</li><li>For longer-term custody changes, ask Legal Aid (585-232-4090) \u2014 custody is its own Family Court case, also free to file.</li></ol><p><strong>Your next step:</strong> add the children to Step 1b now, so they're in every form this page builds.</p>" },
+{ k:["how long","last","duration","years"], a:
+"<p><strong>A final Family Court order usually lasts up to 2 years \u2014 up to 5 years in serious cases.</strong></p><p class='lawline'><strong>The law, simply:</strong> Family Court Act \u00A7 842 caps a final order at two years, or five years if the judge finds aggravating circumstances (like a weapon, serious injury, or a prior violation) or the conduct broke an earlier order. A Temporary Order is short \u2014 it runs until your hearing date. The exact expiration date is printed on your order.</p><ol><li>Find the expiration date on your order and enter it in Step 1a below.</li><li>Download the calendar reminders this page builds (30, 14, 7 days before).</li><li>When the date gets close, use the Extend path \u2014 before it expires, never after.</li></ol><p><strong>Your next step:</strong> check the date printed on your order today.</p>" },
+{ k:["address","find me","where i live","confidential","safe address","hide"], a:
+"<p><strong>You can ask the court to keep your address confidential \u2014 do it at filing, out loud, so it happens from the start.</strong></p><p class='lawline'><strong>The law, simply:</strong> Family Court can keep a petitioner's address and contact information confidential and out of papers served on the respondent when disclosure would put you at risk. Use a safe mailing address for the court \u2014 it can be an advocate's or a trusted person's address.</p><ol><li>In Step 1b, only enter a contact that's safe for the court to use \u2014 nothing the other person can see.</li><li>At the clerk's window, say: \u201CCan I keep my address confidential, so it isn't given to the other person?\u201D (It's in your printed script, too.)</li><li>Give the court the safe address/phone where they can actually reach you.</li><li>Tell Willow (585-222-7233) about your situation \u2014 they help with safety planning beyond the paperwork.</li></ol><p><strong>Your next step:</strong> decide on your safe contact before you file, and put only that in Step 1b.</p>" },
+{ k:["criminal","police","arrest","press charges","charge him","charge her","da "], a:
+"<p><strong>Family Court and Criminal Court are two different doors \u2014 and you can use both at the same time.</strong></p><p class='lawline'><strong>The law, simply:</strong> Both courts share jurisdiction over family offenses (\u00A7 812). Family Court is the case <em>you</em> file, free, focused on protection, decided by \u201Cmore likely than not.\u201D Criminal Court starts with an arrest; the District Attorney prosecutes, the proof standard is higher, and a criminal judge can also issue an order \u2014 but you don't control that case, and a criminal order can't be extended after it expires.</p><ol><li>If a crime just happened or you're unsafe: 911 \u2014 police can arrest and a criminal order may follow.</li><li>File in Family Court too (Form 8-2) \u2014 you don't have to choose, and you don't need the police case first.</li><li>Keep the same incident log for both \u2014 build it once below (Step 1c).</li><li>If the DA's office contacts you, your Family Court case continues regardless of what happens criminally.</li></ol><p><strong>Your next step:</strong> for protection you control, start the Family Court packet below.</p>" },
+{ k:["change","modify","drop","cancel","lift the order","end the order","stronger"], a:
+"<p><strong>Orders can be changed by the court that made them \u2014 in both directions: stronger, or modified when circumstances change.</strong></p><p class='lawline'><strong>The law, simply:</strong> The same motion used to extend (GF-10 + GF-10a) can ask to modify an order's conditions under \u00A7 842. One caution: a protected person can't simply \u201Cdrop\u201D an order by telling the respondent it's okay \u2014 until a judge changes it, the order stands and the respondent can still be arrested for breaking it. Only a judge can change or end it.</p><ol><li>Decide exactly what change you need (add an address, add children, extend the date, different pickup rules).</li><li>Build the Extension packet in Step 2 \u2014 it's the same GF-10/GF-10a paperwork \u2014 and write the change in the good-cause box (Step 1d).</li><li>File it with the court that issued your order and have it served.</li><li>Follow the old order exactly until the judge signs the new one.</li></ol><p><strong>Your next step:</strong> write the exact change you want in one sentence, in Step 1d.</p>" },
+{ k:["gun","weapon","firearm"], a:
+"<p><strong>Tell the court about weapons \u2014 it changes what the judge can order and how seriously the case is treated.</strong></p><p class='lawline'><strong>The law, simply:</strong> Under Family Court Act \u00A7 842 and related state and federal law, a judge can order the respondent to surrender firearms and can suspend or bar firearm licenses in qualifying cases, especially where a weapon was used or threatened. A weapon can also be an \u201Caggravating circumstance\u201D supporting a 5-year order.</p><ol><li>In your incident log, write down every time a weapon was shown, mentioned, or used \u2014 exact words.</li><li>Mention weapons at the clerk's window and to the judge \u2014 don't assume it's in the paperwork unless you wrote it.</li><li>If a weapon is threatened against you now, call 911 first.</li><li>Tell Willow (585-222-7233) \u2014 weapons change safety planning, and they do this daily.</li></ol><p><strong>Your next step:</strong> search your incident log \u2014 is every weapon mention written down? Add what's missing.</p>" },
+{ k:["move","another state","out of state","relocat","leave new york"], a:
+"<p><strong>Your New York order travels with you \u2014 it is enforceable in every state.</strong></p><p class='lawline'><strong>The law, simply:</strong> Federal law (the Violence Against Women Act, 18 U.S.C. \u00A7 2265) requires every state to enforce valid protection orders from other states \u2014 no re-filing needed just because you crossed a state line. Keeping a copy with you lets police in the new state verify it in the national registry.</p><ol><li>Keep a paper copy of the order on you and a photo of it on your phone.</li><li>After you move, you may file a copy with the local court or sheriff in your new state to make local enforcement faster (optional, usually free).</li><li>If it needs extending later, that still happens in the New York court that issued it \u2014 ask the clerk about appearing remotely.</li><li>Update your safe contact with the court so notices reach you.</li></ol><p><strong>Your next step:</strong> photograph your order (all pages) before you travel.</p>" }
+];
+var FALLBACK = "<p><strong>That's a real question, and I want you to get an answer you can trust.</strong> I answer from the New York rules on this page, and your wording didn't match a topic I cover \u2014 try asking about: filing, cost, extending/renewing, an expired order, a violation, service, the hearing, evidence, children, or keeping your address safe. Or tap one of the questions above.</p><p class='lawline'><strong>Meanwhile, the basics:</strong> Family Court filing is free, you don't need a lawyer, and free humans who know your exact situation are at Willow (585-222-7233, 24/7) and Legal Aid (585-232-4090).</p><ol><li>If you're in danger now, call 911.</li><li>Re-ask your question using one of those topic words, or tap a suggested question.</li><li>Start your paperwork below (Step 1) \u2014 most questions answer themselves once your packet exists.</li><li>For advice about your exact facts, call Willow or Legal Aid \u2014 free and confidential.</li></ol><p><strong>Your next step:</strong> tap a suggested question above, or call Willow at 585-222-7233.</p>";
+function addMsg(cls, who, html){
+  var log = $("chatLog");
+  var div = document.createElement("div");
+  div.className = "msg " + cls;
+  div.innerHTML = '<div class="who">' + who + '</div><div class="bubble">' + html + "</div>";
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+  return div;
+}
+function addBotMsg(html){ return addMsg("bot", "Helper", html); }
+function scoreAnswer(q){
+  var best = null, bestScore = 0;
+  for(var i=0;i<ANSWERS.length;i++){
+    var s = 0;
+    for(var j=0;j<ANSWERS[i].k.length;j++){ if(q.indexOf(ANSWERS[i].k[j]) !== -1){ s += ANSWERS[i].k[j].length; } }
+    if(s > bestScore){ bestScore = s; best = ANSWERS[i]; }
+  }
+  return bestScore > 0 ? best : null;
+}
+function askQuestion(raw){
+  var q = (raw || "").trim();
+  if(!q){ return; }
+  addMsg("user", "You", esc(q));
+  var match = scoreAnswer(q.toLowerCase());
+  addBotMsg(match ? match.a : FALLBACK);
+}
+var SUGGESTED = [
+  "What do I do if he violates the order?",
+  "How do I renew my order before it expires?",
+  "My order already expired \u2014 what now?",
+  "Is it really free? I can't afford a lawyer.",
+  "How do I file for the first time?",
+  "I need protection today \u2014 what do I do?",
+  "What happens at the hearing?",
+  "Can the order protect my kids too?",
+  "How will he get the papers?",
+  "Can I keep my address secret from him?"
+];
+var chipRow = $("chipRow");
+for(var s=0;s<SUGGESTED.length;s++){
+  (function(text){
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = text;
+    b.addEventListener("click", function(){ askQuestion(text); });
+    chipRow.appendChild(b);
+  })(SUGGESTED[s]);
+}
+$("askForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  askQuestion($("askInput").value);
+  $("askInput").value = "";
+});
+
+/* ---------- save & resume (this device only) ---------- */
+var SAVE_KEY = "oop-helper-progress-v1";
+var restoring = false;
+var saveTimer = null;
+function storageOK(){ try { var t = "__oop_t__"; window.localStorage.setItem(t, "1"); window.localStorage.removeItem(t); return true; } catch(e){ return false; } }
+function hasContent(c){
+  return !!(c.myName || c.respName || c.fileNo || c.goodCause || c.safeContact || c.children ||
+    (c.incidents && c.incidents.length) || (c.protections && c.protections.length));
+}
+function saveProgress(){
+  if(restoring || !storageOK()){ return; }
+  try {
+    var c = getCase();
+    var payload = { v: 1, savedAt: new Date().toISOString(), path: state.path, packet: state.packet, caseData: c };
+    window.localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+    var ls = $("lastSaved");
+    if(ls && hasContent(c)){ ls.textContent = "Last saved on this device: " + new Date().toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit" }) + "."; }
+  } catch(e){ /* storage full or blocked \u2014 page still works without saving */ }
+}
+function scheduleSave(){ if(saveTimer){ clearTimeout(saveTimer); } saveTimer = setTimeout(saveProgress, 400); }
+document.addEventListener("input", scheduleSave);
+document.addEventListener("change", scheduleSave);
+function setField(id, v){ var el = $(id); if(el && v != null){ el.value = v; } }
+function setIncidents(list){
+  $("incidentList").innerHTML = ""; incCount = 0;
+  if(!list || !list.length){ addIncident(); return; }
+  for(var i=0;i<list.length;i++){
+    addIncident();
+    var boxes = document.querySelectorAll("#incidentList .incident");
+    var b = boxes[boxes.length - 1], x = list[i];
+    b.querySelector(".inc-date").value = x.date || "";
+    b.querySelector(".inc-place").value = x.place || "";
+    b.querySelector(".inc-kind").value = x.kind || "Family offense / frightening or harmful conduct";
+    b.querySelector(".inc-what").value = x.what || "";
+    b.querySelector(".inc-wit").value = x.wit || "";
+    b.querySelector(".inc-ev").value = x.ev || "";
+  }
+  renumberIncidents();
+}
+function applyProgress(payload){
+  if(!payload || !payload.caseData){ return false; }
+  var c = payload.caseData;
+  restoring = true;
+  setField("caseFileNo", c.fileNo); setField("caseCourt", c.court || "Monroe County Family Court");
+  setField("caseJudge", c.judge); setField("caseOrderType", c.orderType);
+  setField("caseIssued", c.issued); setField("caseExpires", c.expires);
+  setField("myName", c.myName); setField("respName", c.respName);
+  setField("relationship", c.relationship); setField("safeContact", c.safeContact);
+  setField("childrenInfo", c.children); setField("respWhere", c.respWhere);
+  setField("extLength", c.extLength); setField("goodCause", c.goodCause);
+  for(var i=0;i<protBtns.length;i++){
+    var on = (c.protections || []).indexOf(protBtns[i].textContent.trim()) !== -1;
+    protBtns[i].setAttribute("aria-pressed", on ? "true" : "false");
+  }
+  setIncidents(c.incidents);
+  selectPath(payload.path || PATH_TO_PACKET[payload.packet] || "first", true);
+  setPacket(payload.packet || "first", true);
+  restoring = false;
+  updateDeadline(); renderReview(); renderScript();
+  return hasContent(c);
+}
+function loadSaved(){
+  if(!storageOK()){ return null; }
+  try { var raw = window.localStorage.getItem(SAVE_KEY); return raw ? JSON.parse(raw) : null; } catch(e){ return null; }
+}
+function eraseSaved(){
+  try { window.localStorage.removeItem(SAVE_KEY); } catch(e){}
+  $("welcomeBack").hidden = true;
+  var ls = $("lastSaved"); if(ls){ ls.textContent = ""; }
+}
+$("clearPageBtn").addEventListener("click", function(){ eraseSaved(); var ss = $("saveStatus"); if(ss){ ss.textContent = ""; } });
+$("clearAnswersBtn").addEventListener("click", function(){
+  eraseSaved();
+  $("clearPageBtn").click();
+  $("saveStatus").textContent = "Erased. Every answer saved on this device is gone. The page is blank, like the first visit.";
+});
+$("wbErase").addEventListener("click", function(){ $("clearAnswersBtn").click(); });
+$("wbContinue").addEventListener("click", function(){
+  $("welcomeBack").hidden = true;
+  $("worksheet").scrollIntoView({ behavior:"smooth", block:"start" });
+});
+$("downloadProgressBtn").addEventListener("click", function(){
+  var c = getCase();
+  var payload = { v: 1, savedAt: new Date().toISOString(), path: state.path, packet: state.packet, caseData: c };
+  downloadText(JSON.stringify(payload, null, 2), "my-order-of-protection-progress.json", "application/json");
+  $("saveStatus").textContent = "Progress file downloaded. Keep it somewhere safe and private \u2014 it contains everything you typed. Re-upload it here, on any device, to pick up where you left off.";
+});
+$("progressFile").addEventListener("change", function(){
+  var file = this.files && this.files[0];
+  if(!file){ return; }
+  var reader = new FileReader();
+  reader.onload = function(){
+    try {
+      var payload = JSON.parse(String(reader.result || ""));
+      if(applyProgress(payload)){
+        saveProgress();
+        $("saveStatus").textContent = "Progress loaded \u2014 your answers are back in the form below. Check the Review list (Step 3) to confirm everything looks right.";
+        $("worksheet").scrollIntoView({ behavior:"smooth", block:"start" });
+      } else {
+        $("saveStatus").textContent = "That file loaded, but it didn't contain any answers.";
+      }
+    } catch(e){
+      $("saveStatus").textContent = "That file couldn't be read. Make sure it's the progress file this page gave you (ends in .json).";
+    }
+  };
+  reader.readAsText(file);
+  this.value = "";
+});
+
+/* ---------- main tabs: one calm screen at a time ---------- */
+var TAB_GROUPS = {
+  start: [],
+  file: ["paths","worksheet","scripts","file","after"],
+  renew: ["paths","worksheet","scripts","file","after"],
+  ask: ["ask"],
+  hearing: ["hearing","after"],
+  mycase: ["worksheet","automate"],
+  help: ["law","help","sources"]
+};
+var ALL_SECTION_IDS = ["ask","paths","law","automate","worksheet","scripts","file","after","hearing","help","sources"];
+var currentTab = "start";
+function showSectionsFor(tab){
+  var group = TAB_GROUPS[tab] || [];
+  for(var i=0;i<ALL_SECTION_IDS.length;i++){
+    var el = $(ALL_SECTION_IDS[i]);
+    if(el){ el.hidden = group.indexOf(ALL_SECTION_IDS[i]) === -1; }
+  }
+}
+function activateTab(tab, path){
+  currentTab = tab;
+  var btns = document.querySelectorAll(".maintab");
+  for(var i=0;i<btns.length;i++){ btns[i].setAttribute("aria-selected", btns[i].getAttribute("data-tab") === tab ? "true" : "false"); }
+  showSectionsFor(tab);
+  if(tab === "file"){ selectPath(path || "first", true); renderReview(); renderScript(); }
+  if(tab === "renew"){ selectPath(path || "extend", true); renderReview(); renderScript(); }
+}
+var mainTabBtns = document.querySelectorAll(".maintab");
+for(var mt=0; mt<mainTabBtns.length; mt++){
+  mainTabBtns[mt].addEventListener("click", function(){
+    activateTab(this.getAttribute("data-tab"));
+    var bar = document.querySelector(".tabbar");
+    if(bar){ bar.scrollIntoView({ behavior:"smooth", block:"start" }); }
+  });
+}
+$("startBtn").addEventListener("click", function(){
+  activateTab("file");
+  $("paths").scrollIntoView({ behavior:"smooth", block:"start" });
+});
+var quickBtns = document.querySelectorAll(".quickbtn");
+for(var qb=0; qb<quickBtns.length; qb++){
+  quickBtns[qb].addEventListener("click", function(){
+    var tab = this.getAttribute("data-goto");
+    activateTab(tab, this.getAttribute("data-path") || undefined);
+    var target = $(TAB_GROUPS[tab] && TAB_GROUPS[tab][0] ? TAB_GROUPS[tab][0] : "paths");
+    if(target){ target.scrollIntoView({ behavior:"smooth", block:"start" }); }
+  });
+}
+window.addEventListener("beforeprint", function(){
+  for(var i=0;i<ALL_SECTION_IDS.length;i++){ var el = $(ALL_SECTION_IDS[i]); if(el){ el.hidden = false; } }
+});
+window.addEventListener("afterprint", function(){ showSectionsFor(currentTab); });
+
+/* ---------- init ---------- */
+resetIncidents();
+var savedAtLoad = loadSaved();
+if(savedAtLoad && savedAtLoad.caseData && applyProgress(savedAtLoad)){
+  var wb = $("welcomeBack");
+  wb.hidden = false;
+  if(savedAtLoad.savedAt){
+    $("wbWhen").textContent = " on " + new Date(savedAtLoad.savedAt).toLocaleDateString("en-US", { month:"long", day:"numeric" }) + " at " + new Date(savedAtLoad.savedAt).toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit" });
+  }
+  var lsEl = $("lastSaved");
+  if(lsEl){ lsEl.textContent = "Your saved answers were restored from this device."; }
+}
+updateDeadline();
+renderReview();
+renderScript();
+activateTab("start");
+saveProgress();
+})();
+</script>
+</body>
+</html>
