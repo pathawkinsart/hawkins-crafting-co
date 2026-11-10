@@ -1281,6 +1281,10 @@
           <span class="spacer"></span>
           <button class="btn" id="showHockeyBtn" type="button" aria-pressed="false">🏒 Hockey 11/8</button>
           <button class="btn" id="showPokemonBtn" type="button" aria-pressed="false">Pokémon FL-PK</button>
+          <div class="sort-btns" role="group" aria-label="Look up by player or team" style="margin-left:6px;">
+            <button type="button" id="modePlayerBtn" aria-pressed="true">👤 Player</button>
+            <button type="button" id="modeTeamBtn" aria-pressed="false">👥 Team</button>
+          </div>
           <button class="btn" id="changeFileBtn" type="button">Load a different file</button>
         </div>
         <div class="session-banner hidden" id="sessionBanner" role="status"></div>
@@ -1428,7 +1432,7 @@
         <p class="mic-note" id="micNote">Listening… say the player name.</p>
 
         <ul class="suggestions" id="suggestions"></ul>
-        <div class="no-match" id="noMatch">No player in the list matches that. Check the spelling, or try just the last name.
+        <div class="no-match" id="noMatch"><span id="noMatchText">No player in the list matches that. Check the spelling, or try just the last name.</span>
           <div style="margin-top:12px;"><button class="btn" id="findExtraBtn" type="button">＋ Add it as a card not in the worksheet</button></div>
         </div>
 
@@ -2001,6 +2005,17 @@
         var current = null;   // selected row
         var autoSpeak = true;
         var sortMode = "player";
+        var lookupMode = "player"; // "player" | "team" — what the Find search and the camera match on
+        // The team a row belongs to. Player-break sheets split it out
+        // ("Alex DeBrincat — Detroit" -> team "Detroit"); team-break
+        // sheets (e.g. hockey 11/09) put just the team in the Team
+        // column, so the parser filed it as the row's player value
+        // and team is empty — the player value IS the team there.
+        function teamOf(r) {
+          if (!r) return "";
+          if (r.team) return r.team;
+          return r.player || "";
+        }
         var activeSuggestion = -1;
         var lastMatches = [];
         var breakNumbers = []; // sorted unique break numbers (strings), e.g. ["4","5"]
@@ -2903,6 +2918,17 @@
           var tokens = nq.split(" ").filter(Boolean);
           var scored = [];
           filteredRows().forEach(function (r) {
+            if (lookupMode === "team") {
+              var nt2 = norm(teamOf(r));
+              if (!nt2) return;
+              var score2 = -1;
+              if (nt2 === nq) score2 = 0;
+              else if (nt2.indexOf(nq) === 0) score2 = 1;
+              else if (tokens.every(function (t) { return nt2.indexOf(t) >= 0; })) score2 = 2;
+              else if (nt2.indexOf(nq) >= 0) score2 = 3;
+              if (score2 >= 0) scored.push({ row: r, score: score2 });
+              return;
+            }
             var np = norm(r.player), nt = norm(r.team);
             var score = -1;
             if (np === nq) score = 0;
@@ -3381,6 +3407,11 @@
         // so the same common / uncommon sitting in view isn't
         // announced frame after frame. Cleared when the card leaves.
         var liveBulkKey = null;
+        // The team last announced / picked in Team mode live scanning,
+        // so the same team card sitting in view doesn't count a second
+        // spot for that team. Cleared when the card leaves the frame,
+        // when live mode is toggled, and when found counts reset.
+        var liveIgnoreTeam = null;
         // True while a tapped still photo is frozen on screen waiting
         // for its answer. When the answer lands (showScanResult /
         // showBulkResult), readyForNextCard uses it to send the
@@ -3440,6 +3471,7 @@
             livePausedUntil = 0;
             liveIgnoreRow = null;
             liveIgnoreKey = null;
+            liveIgnoreTeam = null;
             goneStreak = 0;
             candidatesOpen = false;
             lastPicker = null;
@@ -3490,6 +3522,7 @@
           liveIgnoreRow = null;
           liveIgnoreKey = null;
           liveBulkKey = null;
+          liveIgnoreTeam = null;
           goneStreak = 0;
           candidatesOpen = false;
           lastPicker = null;
@@ -3873,6 +3906,7 @@
           rows.forEach(function (r) { delete r._fid; });
           liveIgnoreRow = null;
           liveIgnoreKey = null;
+          liveIgnoreTeam = null;
           goneStreak = 0;
           scanResultEl.classList.remove("show");
           camLastEl.classList.add("hidden");
@@ -4242,6 +4276,7 @@
            pointing at the next unfound copy when the matcher grouped
            copies. Returns null when the read names at most one row. */
         function variationGroupFromCands(cands) {
+          if (lookupMode === "team") return null;
           if (!cands || !cands.length) return null;
           var top = cands[0];
           if (!top.allMatched && !top.fullName) return null;
@@ -4269,10 +4304,67 @@
           });
           return inCands >= 2 ? group : null;
         }
+        /* Team-mode OCR matching: the card's TEAM name, not a player.
+           One entry per TEAM — a team has many spots, so the entry
+           carries every row for that team in the scan scope and points
+           at the first spot not yet found, so the shout/count advances
+           through the team's spots in sheet order. The nickname (last
+           word — "Rangers", "Wings") must read; the city is scored,
+           never required, because cards print it in full ("New York")
+           where the sheet may abbreviate it ("NY") — and "New York"
+           alone must never shout, since it is shared with the Islanders. */
+        function candidatesFromOCRTeam(text) {
+          var ocrWords = norm(text).split(/[^a-z0-9]+/).filter(Boolean);
+          if (!ocrWords.length) return [];
+          var byTeam = {};
+          var results = [];
+          scanScopeRows().forEach(function (r) {
+            if (isBulkRow(r)) return;
+            var team = teamOf(r);
+            if (!team) return;
+            var tParts = norm(team).split(/[^a-z0-9]+/).filter(Boolean);
+            if (!tParts.length) return;
+            var nick = tParts[tParts.length - 1];
+            var nickMatched = tokenMatches(nick, ocrWords);
+            var matched = tParts.filter(function (p) { return tokenMatches(p, ocrWords); });
+            if (!nickMatched || matched.length * 2 < tParts.length) return;
+            var key = norm(team);
+            var entry = byTeam[key];
+            if (!entry) {
+              entry = {
+                team: team, teamRows: [],
+                score: Math.round(100 * matched.length / tParts.length) + 10,
+                row: null, lastMatched: true, lastExact: true,
+                fullName: matched.length === tParts.length,
+                allMatched: matched.length === tParts.length
+              };
+              byTeam[key] = entry;
+              results.push(entry);
+            }
+            entry.teamRows.push(r);
+          });
+          results.forEach(function (e) {
+            var open = null, first = null;
+            e.teamRows.forEach(function (r) {
+              if (!first) first = r;
+              if (!open && r._fid == null) open = r;
+            });
+            e.row = open || first;
+          });
+          results.sort(function (a, b) { return b.score - a.score || a.team.localeCompare(b.team); });
+          return results;
+        }
+        function isTeamConfident(cands) {
+          if (!cands.length) return false;
+          var top = cands[0], second = cands[1];
+          if (!top || top.score < 60) return false;
+          return !second || top.score - second.score >= 12;
+        }
         function candidatesFromOCR(text) {
           var ocrNorm = norm(text);
           var ocrWords = ocrNorm.split(/[^a-z0-9]+/).filter(Boolean);
           if (!ocrWords.length) return [];
+          if (lookupMode === "team") return candidatesFromOCRTeam(text);
           var ocrJoined = " " + ocrWords.join(" ") + " ";
           var results = [];
           var grouped = {};
@@ -4459,6 +4551,54 @@
               scanCandidatesEl.classList.remove("show");
               candidatesOpen = false;
               lastPicker = null;
+              announceRow(r);
+              cooldownAfterMatch(r);
+            });
+            scanCandidatesEl.appendChild(li);
+          });
+          scanCandidatesEl.classList.add("show");
+        }
+        /* Team-mode result: every spot holding this team in the scan
+           scope, each with its player and user (and Bin where the
+           session carries one — the APK sessions do, the artifact's
+           don't). Tapping a spot goes through the normal matched path,
+           so the card counts for that spot's user. */
+        function renderTeamResult(entry) {
+          lastPicker = { kind: "team", rows: entry.teamRows, team: entry.team };
+          scanCandidatesEl.innerHTML = "";
+          var head = document.createElement("li");
+          head.className = "sc-head";
+          head.textContent = entry.team + " — " + entry.teamRows.length +
+            (entry.teamRows.length === 1 ? " spot" : " spots") +
+            " in Break " + scanScopeBreak() + ". Tap the one you have:";
+          scanCandidatesEl.appendChild(head);
+          entry.teamRows.forEach(function (r) {
+            var li = document.createElement("li");
+            var name = document.createElement("span"); name.className = "p-name"; name.textContent = r.player;
+            li.appendChild(name);
+            if (r.team) {
+              var team = document.createElement("span"); team.className = "p-team"; team.textContent = r.team;
+              li.appendChild(team);
+            }
+            if (r.bin) {
+              var bn = document.createElement("span"); bn.className = "p-team"; bn.textContent = "Bin " + r.bin;
+              li.appendChild(bn);
+            }
+            if (breakNumbers.length > 1 && r.breakNum) {
+              var brk = document.createElement("span"); brk.className = "p-team"; brk.textContent = "Break " + r.breakNum;
+              li.appendChild(brk);
+            }
+            if (copyLabel(r)) {
+              var cp = document.createElement("span"); cp.className = "p-team"; cp.textContent = copyLabel(r);
+              li.appendChild(cp);
+            }
+            var user = document.createElement("span"); user.className = "p-user"; user.textContent = r.user;
+            li.appendChild(user);
+            li.addEventListener("click", function () {
+              scanCandidatesEl.classList.remove("show");
+              candidatesOpen = false;
+              lastPicker = null;
+              if (scanMode === "live") liveIgnoreTeam = norm(teamOf(r));
               announceRow(r);
               cooldownAfterMatch(r);
             });
@@ -4968,6 +5108,7 @@
           }
         }
         function isConfident(cands) {
+          if (lookupMode === "team") return isTeamConfident(cands);
           if (!cands.length) return false;
           // A read that names a card with more than one variation in
           // scope is NEVER confident, however the scores fall: the
@@ -5135,6 +5276,50 @@
             renderVariationCandidates(vGroup);
             return;
           }
+          if (lookupMode === "team") {
+            // Team-mode live read: a team with one spot shouts its
+            // user; a team with several spots asks for a tap. The
+            // team itself is the in-view memory (liveIgnoreTeam) —
+            // the spots are different users, so the row-level ignore
+            // alone would let the same card count a second spot.
+            if (cands.length && isTeamConfident(cands)) {
+              var lt = cands[0];
+              if (liveIgnoreTeam && norm(lt.team) === liveIgnoreTeam) { goneStreak = 0; return; }
+              var ltRows = lt.teamRows;
+              if (ltRows.length === 1) {
+                var lrow = ltRows[0];
+                var lakey = assignmentKey(lrow);
+                if (lakey === liveIgnoreKey) { goneStreak = 0; return; }
+                liveIgnoreRow = lrow;
+                liveIgnoreKey = lakey;
+                liveIgnoreTeam = norm(lt.team);
+                liveBulkKey = null;
+                goneStreak = 0;
+                livePausedUntil = Date.now() + 250;
+                scanAgainBtn.classList.remove("hidden");
+                if (lrow._fid != null) {
+                  selectRow(lrow, false, true);
+                  showScanResult(lrow);
+                  renderRoster();
+                  setScanStatus("Already counted: " + lrow.player + (lrow.team ? " — " + lrow.team : "") +
+                    ". Goes to " + lrow.user + ". " + cardCountText(lrow) +
+                    " — not calling it out again.", "good");
+                  return;
+                }
+                announceRow(lrow);
+                return;
+              }
+              if (candidatesOpen) return;
+              liveIgnoreTeam = norm(lt.team);
+              candidatesOpen = true;
+              setScanStatus("That team has more than one spot in Break " + scanScopeBreak() + " — tap the spot you have.", "");
+              renderTeamResult(lt);
+              return;
+            }
+            // No confident team read: fall through — the loop keeps
+            // reading frames, and the gone-check below clears the
+            // in-view memory when the card leaves the frame.
+          }
           if (isConfident(cands)) {
             var row = cands[0].row;
             var akey = assignmentKey(row);
@@ -5197,7 +5382,7 @@
           // read just falls through and the next frame gets its chance
           // to read confidently. (Photo mode still offers the
           // tap-to-pick list — there is no next frame coming there.)
-          if (liveIgnoreRow || liveIgnoreKey || liveBulkKey) {
+          if (liveIgnoreRow || liveIgnoreKey || liveBulkKey || liveIgnoreTeam) {
             goneStreak++;
             if (goneStreak >= 1) {
               // The card has left the frame — the assignment is no
@@ -5206,6 +5391,7 @@
               liveIgnoreRow = null;
               liveIgnoreKey = null;
               liveBulkKey = null;
+              liveIgnoreTeam = null;
               goneStreak = 0;
               scanAgainBtn.classList.add("hidden");
               setScanStatus("Scanning… hold the next card up.");
@@ -5235,6 +5421,28 @@
             }
           }
           var cands = candidatesFromOCR(text || "");
+          if (lookupMode === "team") {
+            // A team read is the answer itself: one spot shouts its
+            // user, several spots ask for a tap on the one in hand.
+            // A weak read falls through to the status below and
+            // returns false, so the name-plate second look gets its
+            // chance to read the team name better.
+            if (cands.length && isTeamConfident(cands)) {
+              var tRows = cands[0].teamRows;
+              if (tRows.length === 1) {
+                liveIgnoreRow = tRows[0];
+                liveIgnoreKey = assignmentKey(tRows[0]);
+                announceRow(tRows[0]);
+              } else {
+                candidatesOpen = true;
+                setScanStatus("That team has more than one spot in Break " + scanScopeBreak() + " — tap the spot you have.", "");
+                renderTeamResult(cands[0]);
+              }
+              return true;
+            }
+            setScanStatus("The team name didn't read clearly. Hold the card steady inside the frame, tap-and-hold the team name to focus, then tap the picture again.", "");
+            return false;
+          }
           // More than one variation of this card in the scan scope:
           // never guess which one — show the variations and let the
           // sorter tap the one in hand. The card IS identified (its
@@ -5504,6 +5712,38 @@
           renderRoster();
         });
 
+        /* ---------- Player / Team lookup mode ---------- */
+        // Player mode (default): the Find search and the camera match
+        // by player name. Team mode: they match by TEAM name instead
+        // — the path for team breaks (hockey 11/09), where the sheet
+        // has one row per team spot and the player name alone can't
+        // say where a card goes. A team match shows every spot/user
+        // holding that team.
+        function setLookupMode(mode) {
+          lookupMode = mode === "team" ? "team" : "player";
+          var mp = $("modePlayerBtn"), mt = $("modeTeamBtn");
+          if (mp) mp.setAttribute("aria-pressed", lookupMode === "player" ? "true" : "false");
+          if (mt) mt.setAttribute("aria-pressed", lookupMode === "team" ? "true" : "false");
+          if (queryEl) {
+            queryEl.placeholder = lookupMode === "team" ? "Type a team name…" : "Type a player name…";
+            queryEl.setAttribute("aria-label", lookupMode === "team" ? "Team name" : "Player name");
+          }
+          var tab = $("tabFind");
+          if (tab) tab.textContent = lookupMode === "team" ? "Find a team" : "Find a player";
+          var mic = $("micBtn");
+          if (mic) mic.setAttribute("aria-label", lookupMode === "team" ? "Say a team name" : "Say a player name");
+          var nm = $("noMatchText");
+          if (nm) nm.textContent = lookupMode === "team"
+            ? "No team in the list matches that. Check the spelling."
+            : "No player in the list matches that. Check the spelling, or try just the last name.";
+          // Re-run the current search under the new mode, and clear
+          // any single-row callout from the other mode.
+          if (queryEl) onQuery();
+          if (calloutEl) calloutEl.classList.remove("show");
+        }
+        $("modePlayerBtn").addEventListener("click", function () { setLookupMode("player"); });
+        $("modeTeamBtn").addEventListener("click", function () { setLookupMode("team"); });
+
         /* ---------- preloaded sessions & show switcher ---------- */
         // This build ships with two worksheets baked in: the JSON in
         // the #preloadedSession block (Pokémon FL-PK) and the one in
@@ -5553,6 +5793,17 @@
           if (rows.length) return;
           showHockey();
         })();
+
+        // Debug handle for headless checks (inert in the app): lets a
+        // test page call the matchers against the loaded rows.
+        window.__puluTest = {
+          candidatesFromOCR: candidatesFromOCR,
+          matchRows: matchRows,
+          teamOf: teamOf,
+          setLookupMode: setLookupMode,
+          get lookupMode() { return lookupMode; },
+          rows: function () { return rows; }
+        };
       })();
     </script>
   </body>
