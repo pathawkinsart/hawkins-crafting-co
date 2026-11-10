@@ -113,6 +113,22 @@
         outline: 3px solid var(--accent);
         outline-offset: 2px;
       }
+      /* ---------- SharePoint show picker ---------- */
+      .sp-picker { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+      .sp-select {
+        border: 2px solid var(--line-strong);
+        background: var(--panel-2);
+        color: var(--ink);
+        font-family: inherit;
+        font-weight: 700;
+        font-size: 15px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        min-height: 48px;
+        max-width: 100%;
+      }
+      .sp-note { margin: 0 0 12px; font-size: 14px; font-weight: 600; line-height: 1.45; color: var(--ink-soft); }
+      .sp-note.error { color: var(--bad); font-weight: 700; }
 
       /* ---------- dropzone ---------- */
       .dropzone {
@@ -1285,8 +1301,15 @@
             <button type="button" id="modePlayerBtn" aria-pressed="true">👤 Player</button>
             <button type="button" id="modeTeamBtn" aria-pressed="false">👥 Team</button>
           </div>
+          <span class="sp-picker" id="spPicker">
+            <button class="btn" id="spSignInBtn" type="button">Sign in to SharePoint</button>
+            <select class="sp-select hidden" id="spSelect" aria-label="Pick a show from the Breaking folder on SharePoint">
+              <option value="">Shows from SharePoint…</option>
+            </select>
+          </span>
           <button class="btn" id="changeFileBtn" type="button">Load a different file</button>
         </div>
+        <p class="sp-note hidden" id="spSetupMsg" role="status"></p>
         <div class="session-banner hidden" id="sessionBanner" role="status"></div>
 
         <div class="break-filter" id="breakFilter" role="group" aria-label="Filter by break number">
@@ -1300,22 +1323,10 @@
           <button type="button" role="tab" id="tabGive" aria-selected="false" aria-controls="panelGive">Giveaways</button>
         </div>
 
-        <div id="panelSort" class="tab-panel" role="tabpanel" aria-labelledby="tabSort">
-        <div class="scan-launch">
-          <button id="scanBtn" type="button" aria-expanded="false" aria-controls="cameraPanel">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-              <circle cx="12" cy="13" r="4"></circle>
-            </svg>
-            Take a photo of a card
-          </button>
-        </div>
-
-        <section class="camera-panel hidden" id="cameraPanel" aria-label="Scan a card with the camera">
+<section class="camera-panel" id="cameraPanel" aria-label="Scan a card with the camera">
           <div class="cam-head">
-            <strong>Hold the whole card in the frame — tap to read it</strong>
+            <strong>Live camera — hold a card in the frame, it reads on its own</strong>
             <span class="spacer"></span>
-            <button class="cam-close" id="closeCameraBtn" type="button">Close</button>
           </div>
           <div class="cam-scope hidden" id="camScope" role="status"></div>
           <div class="cam-stage" id="camStage" role="button" tabindex="0" aria-label="Camera view. Hold the whole card inside the dashed frame, so the whole card fits inside it. Tap to take a photo. Tap and hold to focus.">
@@ -1342,9 +1353,10 @@
           </div>
           <div class="cam-actions">
             <button class="btn primary" id="photoBtn" type="button">Take a photo</button>
-            <button class="btn" id="liveBtn" type="button" aria-pressed="false">Live scan: Off — turn on (optional)</button>
+            <button class="btn" id="liveBtn" type="button" aria-pressed="false">Live scan: On — turn off</button>
             <select class="btn hidden" id="camSelect" aria-label="Choose camera"></select>
             <button class="btn hidden" id="scanAgainBtn" type="button">Ready for next card</button>
+            <button class="btn" id="restartCamBtn" type="button">Restart camera</button>
             <button class="btn" id="resetFoundBtn" type="button">Reset found counts</button>
             <button class="btn" id="addExtraBtn" type="button">＋ Card not in worksheet</button>
             <button class="btn" id="saveSessionBtn" type="button">Save session</button>
@@ -1412,6 +1424,10 @@
           <canvas id="camCanvas" class="hidden"></canvas>
           <input id="photoInput" type="file" accept="image/*" capture="environment" class="hidden" />
         </section>
+
+        <div id="panelSort" class="tab-panel" role="tabpanel" aria-labelledby="tabSort">
+
+        
         </div><!-- /panelSort -->
 
         <div id="panelFind" class="tab-panel hidden" role="tabpanel" aria-labelledby="tabFind">
@@ -2918,6 +2934,243 @@
             showPasteMsg("Downloading — when it's done, tap 'Choose worksheet file', go to Downloads, and pick the file.", "note");
           });
         })();
+        /* ---------- SharePoint show picker (Microsoft Graph) ---------- */
+        // The Breaking folder lives on SharePoint — it is NOT a local
+        // server and it cannot be found over office Wi-Fi, so a
+        // static page cannot auto-discover it. The picker signs the
+        // sorter into his Microsoft account ONCE in the browser
+        // (MSAL.js + Microsoft Graph, the same account he already
+        // uses for SharePoint), lists the Breaking folder's show
+        // files, and loads the one he picks. After that one sign-in
+        // the browser remembers him (MSAL token cache in
+        // localStorage), so the next visit just lists the shows.
+        // ONE-TIME SETUP (in Entra ID, Top Shelf tenant — do once):
+        //  1. App registrations → New registration → name it
+        //     "Break Sorting Tool", account type "Accounts in this
+        //     organizational directory only", platform "Single-page
+        //     application", redirect URI = this page's address
+        //     (https://hawkinscraftingco.com/player-lookup/).
+        //  2. API permissions → add Microsoft Graph delegated
+        //     Files.Read.All + Sites.Read.All (an admin may need to
+        //     grant consent for Sites.Read.All).
+        //  3. Copy the Application (client) ID into SP_CLIENT_ID
+        //     below. Until then the picker shows the setup note and
+        //     the file picker stays the way to load a show.
+        var SP_CLIENT_ID = ""; // <-- paste the Entra app registration client ID here
+        var SP_SITE_HOST = "topshelfenterprises.sharepoint.com";
+        var SP_SITE_PATH = "sites/contentTypeHub";
+        var SP_FOLDER = "Operations/Breaking"; // folder inside Shared Documents
+        var SP_SCOPES = ["Files.Read.All", "Sites.Read.All"];
+        var SP_GRAPH = "https://graph.microsoft.com/v1.0";
+        var SP_MSAL_URL = "https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.1/lib/msal-browser.min.js";
+        var spMsal = null, spAccount = null, spFiles = [];
+        var spSignInBtn = $("spSignInBtn"), spSelect = $("spSelect"), spSetupMsg = $("spSetupMsg");
+        function spShowMsg(text, isError) {
+          if (!spSetupMsg) return;
+          spSetupMsg.textContent = text || "";
+          spSetupMsg.className = "sp-note" + (text ? "" : " hidden") + (isError ? " error" : "");
+        }
+        function spSetupText() {
+          return "SharePoint sign-in isn't set up yet (one-time setup). In Entra ID (Top Shelf tenant): create an app registration named “Break Sorting Tool”, platform Single-page application, redirect URI " +
+            window.location.origin + window.location.pathname +
+            ". Add Microsoft Graph delegated permissions Files.Read.All and Sites.Read.All (an admin may need to grant consent). Then paste the Application (client) ID into the page's SP_CLIENT_ID. Until then, load shows with “Load a different file” — the file picker still works.";
+        }
+        function spLoadMsal() {
+          if (typeof msal !== "undefined") return Promise.resolve(true);
+          return new Promise(function (resolve) {
+            var s = document.createElement("script");
+            s.src = SP_MSAL_URL;
+            s.onload = function () { resolve(typeof msal !== "undefined"); };
+            s.onerror = function () { resolve(false); };
+            document.head.appendChild(s);
+          });
+        }
+        function spSiteBase() {
+          return SP_GRAPH + "/sites/" + SP_SITE_HOST + ":/" + SP_SITE_PATH + ":";
+        }
+        function spChannelName(code) {
+          var map = { HK: "Hockey", PK: "Pokémon", TT: "TikTok", FL: "Florida" };
+          return map[(code || "").toUpperCase()] || code || "";
+        }
+        // WTH-WN-HK-01_20261109_B.xlsx → "Hockey · Nov 9, 2026 · Show B".
+        // Anything that doesn't parse that way falls back to the bare
+        // filename, so a show is never hidden by a naming surprise.
+        function spShowLabel(name) {
+          var base = String(name || "").replace(/\.(xlsx|xls)$/i, "");
+          var parts = base.split("_");
+          var dateStr = "", chan = "", letter = "";
+          parts.forEach(function (p) {
+            var m = p.match(/^(\d{4})(\d{2})(\d{2})$/);
+            if (m) {
+              var d = new Date(+m[1], +m[2] - 1, +m[3]);
+              dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+            }
+          });
+          var segs = (parts[0] || "").split("-");
+          if (segs.length > 2) chan = spChannelName(segs[segs.length - 2]);
+          var last = parts[parts.length - 1] || "";
+          if (/^[A-C]$/.test(last)) letter = last;
+          var bits = [];
+          if (chan) bits.push(chan);
+          if (dateStr) bits.push(dateStr);
+          if (letter) bits.push("Show " + letter);
+          return bits.length ? bits.join(" · ") : base;
+        }
+        function spShowDate(name) {
+          var m = String(name || "").match(/(\d{4})(\d{2})(\d{2})/);
+          return m ? (m[1] + m[2] + m[3]) : "";
+        }
+        function spPopulateShows(items) {
+          spFiles = (items || []).filter(function (it) {
+            return it && it.file && /\.(xlsx|xls)$/i.test(it.name || "");
+          });
+          spFiles.sort(function (a, b) {
+            var da = spShowDate(a.name), db = spShowDate(b.name);
+            if (da !== db) return (db || "").localeCompare(da || "");
+            return String(a.name).localeCompare(String(b.name));
+          });
+          spSelect.innerHTML = "";
+          var ph = document.createElement("option");
+          ph.value = "";
+          ph.textContent = spFiles.length ? ("Pick a show… (" + spFiles.length + " in the Breaking folder)") : "No show files in the Breaking folder";
+          spSelect.appendChild(ph);
+          spFiles.forEach(function (it) {
+            var o = document.createElement("option");
+            o.value = it.id;
+            o.textContent = spShowLabel(it.name);
+            o.title = it.name;
+            spSelect.appendChild(o);
+          });
+          spSelect.classList.remove("hidden");
+        }
+        function spGetToken(allowPopup) {
+          if (!spMsal || !spAccount) return Promise.reject(new Error("not signed in"));
+          return spMsal.acquireTokenSilent({ scopes: SP_SCOPES, account: spAccount })
+            .catch(function () {
+              if (allowPopup) return spMsal.acquireTokenPopup({ scopes: SP_SCOPES });
+              throw new Error("sign-in needed");
+            });
+        }
+        function spGraphJson(path, allowPopup) {
+          return spGetToken(allowPopup).then(function (res) {
+            var url = path.indexOf("https://") === 0 ? path : SP_GRAPH + path;
+            return fetch(url, { headers: { Authorization: "Bearer " + res.accessToken } });
+          }).then(function (r) {
+            if (!r.ok) throw new Error("SharePoint returned " + r.status);
+            return r.json();
+          });
+        }
+        function spListShows() {
+          spShowMsg("Loading the Breaking folder…", false);
+          var all = [];
+          function page(url) {
+            return spGraphJson(url, false).then(function (json) {
+              all = all.concat((json && json.value) || []);
+              var next = json && json["@odata.nextLink"];
+              if (next && all.length < 1000) return page(next);
+              return all;
+            });
+          }
+          return page(spSiteBase() + "/drive/root:/" + SP_FOLDER + ":/children?$top=200")
+            .then(function (items) {
+              spPopulateShows(items);
+              if (!spFiles.length) spShowMsg("Signed in, but the Breaking folder has no .xlsx show files.", true);
+              else spShowMsg("Signed in as " + (spAccount.username || spAccount.name || "Microsoft account") + " — pick a show from the list.", false);
+            })
+            .catch(function (err) {
+              spShowMsg("Couldn't list the Breaking folder (" + (err && err.message ? err.message : "sign-in needed") + "). Tap “Sign in to SharePoint” to try again, or load a show with “Load a different file”.", true);
+            });
+        }
+        function spLoadShow(itemId, fileName) {
+          spShowMsg("Loading “" + fileName + "” from SharePoint…", false);
+          return spGetToken(true).then(function (res) {
+            return fetch(spSiteBase() + "/drive/items/" + encodeURIComponent(itemId) + "/content", {
+              headers: { Authorization: "Bearer " + res.accessToken }
+            });
+          }).then(function (r) {
+            if (!r.ok) throw new Error("SharePoint returned " + r.status);
+            return r.arrayBuffer();
+          }).then(function (buf) {
+            var file = new File([buf], fileName, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            loadFile(file);
+            spShowMsg("", false);
+          }).catch(function (err) {
+            spShowMsg("Couldn't download “" + fileName + "” (" + (err && err.message ? err.message : "sign-in needed") + "). Load it with “Load a different file” instead.", true);
+          });
+        }
+        function spSetSignedIn(on) {
+          if (!spSignInBtn) return;
+          spSignInBtn.textContent = on
+            ? "Sign out" + (spAccount && spAccount.username ? " (" + spAccount.username + ")" : "")
+            : "Sign in to SharePoint";
+        }
+        function spSignIn() {
+          if (!SP_CLIENT_ID) { spShowMsg(spSetupText(), true); return; }
+          spLoadMsal().then(function (ok) {
+            if (!ok) { spShowMsg("The Microsoft sign-in library didn't load — check your connection and try again, or load a show with “Load a different file”.", true); return; }
+            if (!spMsal) {
+              spMsal = new msal.PublicClientApplication({
+                auth: { clientId: SP_CLIENT_ID, authority: "https://login.microsoftonline.com/common", redirectUri: window.location.origin + window.location.pathname },
+                cache: { cacheLocation: "localStorage" }
+              });
+            }
+            return spMsal.loginPopup({ scopes: SP_SCOPES }).then(function (res) {
+              spAccount = res.account || (spMsal.getAllAccounts()[0] || null);
+              if (!spAccount) throw new Error("no account");
+              spSetSignedIn(true);
+              return spListShows();
+            });
+          }).catch(function (err) {
+            var code = (err && err.errorCode) || "";
+            if (code === "user_cancelled" || code === "interaction_in_progress") {
+              spShowMsg("Sign-in was closed — tap “Sign in to SharePoint” to try again, or load a show with “Load a different file”.", true);
+            } else {
+              spShowMsg("Microsoft sign-in didn't work (" + (err && err.message ? err.message : "unknown error") + "). Load a show with “Load a different file” instead.", true);
+            }
+          });
+        }
+        function spSignOut() {
+          var p = (spMsal && spMsal.logoutPopup) ? spMsal.logoutPopup({ account: spAccount }) : Promise.resolve();
+          p.catch(function () {}).then(function () {
+            spAccount = null; spFiles = [];
+            spSelect.innerHTML = "";
+            spSelect.classList.add("hidden");
+            spSetSignedIn(false);
+            spShowMsg("Signed out of SharePoint.", false);
+          });
+        }
+        if (spSignInBtn) spSignInBtn.addEventListener("click", function () {
+          if (spAccount) spSignOut(); else spSignIn();
+        });
+        if (spSelect) spSelect.addEventListener("change", function () {
+          var id = spSelect.value;
+          if (!id) return;
+          var it = null;
+          spFiles.forEach(function (f) { if (f.id === id) it = f; });
+          spSelect.value = "";
+          if (it) spLoadShow(it.id, it.name);
+        });
+        // On open: if SharePoint sign-in was never set up, say so
+        // plainly and leave the file picker as the way to load a
+        // show. If it was set up and this browser already signed
+        // in once, list the shows straight away (token cache).
+        (function spInit() {
+          if (!SP_CLIENT_ID) { spShowMsg(spSetupText(), true); return; }
+          spLoadMsal().then(function (ok) {
+            if (!ok || typeof msal === "undefined") { spShowMsg("The Microsoft sign-in library didn't load — check your connection, or load a show with “Load a different file”.", true); return; }
+            spMsal = new msal.PublicClientApplication({
+              auth: { clientId: SP_CLIENT_ID, authority: "https://login.microsoftonline.com/common", redirectUri: window.location.origin + window.location.pathname },
+              cache: { cacheLocation: "localStorage" }
+            });
+            var accounts = spMsal.getAllAccounts();
+            if (accounts.length) {
+              spAccount = accounts[0];
+              spSetSignedIn(true);
+              spListShows();
+            }
+          });
+        })();
+
         fileInput.addEventListener("change", function () {
           if (fileInput.files && fileInput.files[0]) loadFile(fileInput.files[0]);
           fileInput.value = "";
@@ -3396,11 +3649,10 @@
         }
 
         /* ---------- camera scan (OCR) ---------- */
-        var scanBtn = $("scanBtn"), cameraPanel = $("cameraPanel"),
+        var cameraPanel = $("cameraPanel"),
             camVideo = $("camVideo"), camPreview = $("camPreview"), camGuide = $("camGuide"),
             camStage = $("camStage"), camLive = $("camLive"), camMode = $("camMode"), camFocus = $("camFocus"),
             camPausedEl = $("camPaused"), camTapHintEl = $("camTapHint"),
-            scanLaunchEl = document.querySelector(".scan-launch"),
             camCanvas = $("camCanvas"), liveBtn = $("liveBtn"), photoBtn = $("photoBtn"),
             camSelect = $("camSelect"), scanAgainBtn = $("scanAgainBtn"), photoInput = $("photoInput"),
             scanStatusEl = $("scanStatus"), scanProgressEl = $("scanProgress"),
@@ -3456,19 +3708,20 @@
           });
           if (name === "list") renderRoster();
           if (name === "give") renderGiveaways();
-          // Landing on Sort with the camera closed reopens the camera
-          // in still mode — the sort view IS the camera, tap to photo.
-          if (name === "sort" && cameraPanel.classList.contains("hidden")) openCamera();
+          // The camera lives in the main window above the tabs, not
+          // inside any one tab — switching tabs never hides it and
+          // never needs to reopen it.
         }
         ["Sort", "Find", "List", "Give"].forEach(function (label) {
           $("tab" + label).addEventListener("click", function () { showTab(label.toLowerCase()); });
         });
 
-        /* Still is the default mode: the camera is on as a preview
-           only — not recording, not scanning on its own. Tapping the
-           picture takes a still. Live scanning is an opt-in mode
-           turned on/off only from the Live button below the picture,
-           never by tapping the picture itself. */
+        /* Live is the default mode: the camera is on and reads cards
+           on its own as soon as it starts — no tap needed. Tapping
+           the picture still takes a manual photo (the backup if the
+           live feed has trouble). Live scanning is turned off only
+           from the Live button below the picture, never by tapping
+           the picture itself. */
         function updateModeUI() {
           var isLive = scanMode === "live";
           if (camMode) camMode.classList.toggle("show", !isLive && !!camStream);
@@ -3477,7 +3730,7 @@
           camPausedEl.classList.remove("show");
           camPausedEl.setAttribute("aria-hidden", "true");
           camTapHintEl.textContent = isLive ? "LIVE ON · TAP TO TAKE PHOTO" : "TAP TO TAKE PHOTO";
-          liveBtn.textContent = isLive ? "Live scan: On — turn off" : "Live scan: Off — turn on (optional)";
+          liveBtn.textContent = isLive ? "Live scan: On — turn off" : "Live scan: Off — turn on";
           liveBtn.setAttribute("aria-pressed", isLive ? "true" : "false");
           liveBtn.classList.toggle("live-on", isLive);
         }
@@ -3550,12 +3803,13 @@
           lastPicker = null;
           scanCandidatesEl.classList.remove("show");
           if (camStream) {
-            scanMode = "still";
-            stopLiveScan();
-            clearStillPreview();
+            // Live is the default: after a photo's answer, the
+            // camera goes back to live scanning on its own — the
+            // next card reads without a tap. The result banner
+            // stays up until that next read replaces it.
+            setLiveMode(true);
             liveBtn.classList.remove("hidden");
             photoBtn.classList.remove("hidden");
-            updateModeUI();
           }
         }
 
@@ -3712,16 +3966,13 @@
               var p = camVideo.play();
               if (p && p.catch) p.catch(function () {});
               applyAutoFocus();
-              // Still mode: camera on as a preview, NOT scanning and
-              // NOT recording. Nothing is read until the user taps
-              // the picture to take a photo.
-              scanMode = "still";
-              updateModeUI();
               fillCameraSelect();
-              // Whole-card mode: the guide is already sized from
-              // the stage (fitGuideToStage) — the sorter holds the
-              // card back so it fits, and the status line says so.
-              setScanStatus("Camera is on — hold the whole card inside the frame, then tap the picture to take a photo.");
+              // Live scan is the default: the camera reads cards on
+              // its own as soon as it is on — no tap needed. The
+              // live loop is single-flight and throttled (see
+              // startLiveScan), and tapping the picture still takes
+              // a manual photo as a fallback.
+              setLiveMode(true);
               // Labels are available now that permission is granted:
               // if a better camera (e.g. the Logitech) showed up
               // and we are not on it, switch to it — unless the
@@ -3760,22 +4011,13 @@
         function openCamera() {
           if (camOpening) return; // a start request is already in flight
           if (camStream) {
-            // Already streaming — just show the camera in still mode.
-            // Do NOT restart live scanning: live is opt-in only.
-            cameraPanel.classList.remove("hidden");
-            if (scanLaunchEl) scanLaunchEl.classList.add("hidden");
-            scanMode = "still";
-            stopLiveScan();
-            clearStillPreview();
-            updateModeUI();
-            setScanStatus("Camera is on — hold the whole card inside the frame, then tap the picture.");
+            // Already streaming — nothing to do. The camera lives in
+            // the main window and keeps whatever mode it was in:
+            // live stays live (it is the default).
             return;
           }
-          cameraPanel.classList.remove("hidden");
-          if (scanLaunchEl) scanLaunchEl.classList.add("hidden");
           scanMode = "still";
           updateModeUI();
-          scanBtn.setAttribute("aria-expanded", "true");
           camStage.classList.remove("is-frozen");
           camPreview.classList.add("hidden");
           camVideo.classList.remove("hidden");
@@ -3786,9 +4028,8 @@
           scanCandidatesEl.classList.remove("show");
           scanCandidatesEl.innerHTML = "";
           scanReadEl.classList.remove("show");
-          scanResultEl.classList.remove("show");
-          camLastEl.classList.add("hidden");
-          camStage.classList.remove("has-last");
+          // The last card's result is NOT cleared here: it stays on
+          // screen until the next card is read and replaces it.
           setScanStatus("Starting the camera… hold the whole card inside the frame.");
           setScanProgress(null);
           if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -3845,25 +4086,17 @@
             });
           });
         }
-        function closeCamera() {
+        // The camera is a permanent part of the main window now —
+        // there is no Close button and no separate launch button.
+        // "Restart camera" is the recovery if the stream ever stops
+        // (unplugged camera, a picked photo that stopped the feed):
+        // stop whatever is running and open it again, live.
+        $("restartCamBtn").addEventListener("click", function () {
           stopLiveScan();
           stopStream();
-          camGuide.style.width = "";
-          camGuide.style.height = "";
-          lastFrameW = 0; lastFrameH = 0;
-          scanMode = "still";
-          camLive.classList.remove("show");
-          if (camMode) camMode.classList.remove("show");
-          camStage.classList.remove("is-frozen");
-          if (scanLaunchEl) scanLaunchEl.classList.remove("hidden");
-          cameraPanel.classList.add("hidden");
-          scanBtn.setAttribute("aria-expanded", "false");
-        }
-        scanBtn.addEventListener("click", function () {
-          if (cameraPanel.classList.contains("hidden")) openCamera();
-          else closeCamera();
+          camOpening = false;
+          openCamera();
         });
-        $("closeCameraBtn").addEventListener("click", closeCamera);
         if (camSelect) camSelect.addEventListener("change", function () {
           if (!camSelect.value) return;
           camManualPick = true;
@@ -3875,11 +4108,10 @@
           // entirely — if the next card is a second copy of the same
           // player for the same user, it must be allowed to check off
           // the next copy instead of being blocked as the card just
-          // counted — and go back to the live camera preview in
-          // still mode, ready for the next tap. Live scan does NOT
-          // restart on its own; it stays an opt-in. (After a photo
-          // this reset now happens on its own via readyForNextCard;
-          // the button remains for the live-mode flow.)
+          // counted — and go back to live scanning on its own (live
+          // is the default). (After a photo this reset now happens
+          // on its own via readyForNextCard; the button remains for
+          // the live-mode flow.)
           photoArmed = false;
           livePausedUntil = 0;
           liveIgnoreRow = null;
@@ -3890,13 +4122,10 @@
           scanCandidatesEl.classList.remove("show");
           scanAgainBtn.classList.add("hidden");
           if (camStream) {
-            scanMode = "still";
-            stopLiveScan();
-            clearStillPreview();
+            setLiveMode(true);
             liveBtn.classList.remove("hidden");
             photoBtn.classList.remove("hidden");
-            updateModeUI();
-            setScanStatus("Camera is on — hold the next card inside the frame, then tap the picture.");
+            setScanStatus("Live scan on — hold the next card up.");
           } else openCamera();
         });
         $("doneSortBtn").addEventListener("click", function () {
@@ -3942,8 +4171,10 @@
           setScanStatus("Found counts reset. Hold a card up to start counting again.");
         });
         liveBtn.addEventListener("click", function () {
-          // Live scan is an OPTION, toggled only here — never by
-          // tapping the picture, and never on by default.
+          // The Live button is the one place live scanning is
+          // turned off (and back on) — never by tapping the
+          // picture. Live is the default: it starts with the
+          // camera, and this button is the off switch.
           if (!camStream) { openCamera(); return; }
           if (scanMode === "live") {
             setLiveMode(false, "Live scan off. Camera is on — tap the picture to take a photo of the card.");
@@ -5527,12 +5758,46 @@
           return false;
         }
 
-        /* The live loop: read a frame, match it, read the next — back to
-           back with almost no idle gap, reusing the one worker. */
+        /* The live loop: one read in flight at a time, throttled to
+           about one read every 2 seconds — never the old
+           fire-a-new-read-30ms-after-every-pass queue that pegged
+           the CPU and starved the UI. A card must also sit still
+           briefly before it is read (see frameIsStable): a card
+           sliding in or out is never read mid-motion. */
+        // Stillness gate: a tiny offscreen sample of the live frame,
+        // compared with the previous sample. Mean absolute
+        // per-pixel change above ~5 means the frame is moving (a
+        // card sliding in/out); below it the frame is still. The
+        // gate only passes once the frame has been still for 500ms.
+        var liveStabCanvas = document.createElement("canvas");
+        liveStabCanvas.width = 48; liveStabCanvas.height = 27;
+        var liveStabCtx = liveStabCanvas.getContext("2d", { willReadFrequently: true });
+        var livePrevStab = null, liveStableSince = 0;
+        function frameIsStable() {
+          if (!camVideo.videoWidth) return false;
+          try { liveStabCtx.drawImage(camVideo, 0, 0, liveStabCanvas.width, liveStabCanvas.height); } catch (e) { return false; }
+          var data;
+          try { data = liveStabCtx.getImageData(0, 0, liveStabCanvas.width, liveStabCanvas.height).data; } catch (e) { return false; }
+          var now = Date.now();
+          if (!livePrevStab) {
+            livePrevStab = new Uint8ClampedArray(data);
+            liveStableSince = now;
+            return false;
+          }
+          var diff = 0, n = 0;
+          for (var i = 0; i < data.length; i += 12) {
+            diff += Math.abs(data[i] - livePrevStab[i]) + Math.abs(data[i + 1] - livePrevStab[i + 1]) + Math.abs(data[i + 2] - livePrevStab[i + 2]);
+            n += 3;
+          }
+          livePrevStab.set(data);
+          if (!n || diff / n > 5) { liveStableSince = now; return false; }
+          return (now - liveStableSince) >= 500;
+        }
         function startLiveScan() {
           if (liveOn || !camStream) return;
           liveOn = true;
           scanMode = "live";
+          livePrevStab = null; liveStableSince = 0;
           var gen = ++liveGen;
           camLive.classList.add("show");
           if (camMode) camMode.classList.remove("show");
@@ -5550,6 +5815,10 @@
               liveTimer = setTimeout(tick, 100);
               return;
             }
+            // Only read a frame that has sat still briefly — a card
+            // sliding in or out is never read mid-motion. Keep
+            // polling at 100ms until it is still.
+            if (!frameIsStable()) { liveTimer = setTimeout(tick, 100); return; }
             var ok = false;
             try { ok = drawGuideCrop(); } catch (e) {}
             if (!ok) { liveTimer = setTimeout(tick, 100); return; }
@@ -5566,7 +5835,9 @@
                 setScanStatus("The card reader couldn't load or finish. Check your connection — you're back to still mode, so tap the picture to take a photo, or turn live scan on again below.", "err");
               }
             }).then(function () {
-              if (liveOn && gen === liveGen) liveTimer = setTimeout(tick, 30);
+              // Throttled: one read every ~2s at most. The next tick
+              // still waits for a still frame before reading again.
+              if (liveOn && gen === liveGen) liveTimer = setTimeout(tick, 2000);
             });
           };
           liveTimer = setTimeout(tick, 60);
@@ -5590,14 +5861,10 @@
             scanResultSpeakOverride = null;
             drawFullImage(img, img.naturalWidth || img.width, img.naturalHeight || img.height);
             fitStageToFrame(img.naturalWidth || img.width, img.naturalHeight || img.height);
-            if (cameraPanel.classList.contains("hidden")) {
-              cameraPanel.classList.remove("hidden");
-              if (scanLaunchEl) scanLaunchEl.classList.add("hidden");
-              scanBtn.setAttribute("aria-expanded", "true");
-            }
             // Fallback picker photo: stop the preview stream and show
             // the picked photo itself in the stage, not the tight
-            // OCR canvas.
+            // OCR canvas. The camera stays off afterwards — "Restart
+            // camera" below the picture brings the live feed back.
             stopLiveScan();
             stopStream();
             scanMode = "still";
@@ -5825,11 +6092,14 @@
         function showPokemon() { showSession("pokemon"); }
 
         // On open, load the first baked-in show by default — once,
-        // only when nothing has been loaded yet this visit.
+        // only when nothing has been loaded yet this visit. Then
+        // open the camera straight away: it lives in the main
+        // window and live-scans from the moment the page opens —
+        // no tap needed before the first card.
         (function () {
           renderShowSwitcher();
-          if (rows.length) return;
-          showSession(SESSIONS[0].id);
+          if (!rows.length) showSession(SESSIONS[0].id);
+          openCamera();
         })();
 
         // Debug handle for headless checks (inert in the app): lets a
@@ -5842,6 +6112,11 @@
           teamOf: teamOf,
           setLookupMode: setLookupMode,
           showSession: showSession,
+          loadFile: loadFile,
+          spShowLabel: spShowLabel,
+          spPopulateShows: spPopulateShows,
+          spLoadShow: spLoadShow,
+          spShowDate: spShowDate,
           get lookupMode() { return lookupMode; },
           rows: function () { return rows; }
         };
