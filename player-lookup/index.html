@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="data:," />
-    <title>Player User Lookup</title>
+    <title>Break Sorting Tool</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -84,6 +84,7 @@
         font-weight: 500;
       }
       .filebar .spacer { flex: 1 1 auto; }
+      .filebar .show-switcher { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
       .filebar .btn[aria-pressed="true"] {
         background: var(--ink);
         border-color: var(--ink);
@@ -1266,7 +1267,7 @@
         <div class="parse-error" id="parseError" role="alert"></div>
         <div class="session-open">
           <p class="so-title">Open session file</p>
-          <p class="so-sub">Started on the PC? Open the session file exported from Player User Lookup PC — it carries the worksheet's Working Breaks rows plus any scan / sort progress, and loads exactly like the worksheet itself. You can also resume a session saved from this phone the same way.</p>
+          <p class="so-sub">Started on the PC? Open the session file exported from Break Sorting Tool on your PC — it carries the worksheet's Working Breaks rows plus any scan / sort progress, and loads exactly like the worksheet itself. You can also resume a session saved from this phone the same way.</p>
           <button class="btn primary" id="resumeBtn" type="button">Open session file</button>
           <p class="dz-formats" style="margin-top:12px;">.JSON &nbsp;·&nbsp; Exported by the PC app or saved with “Save session”</p>
         </div>
@@ -1279,8 +1280,7 @@
           <span class="fname" id="fileName"></span>
           <span class="fmeta" id="fileMeta"></span>
           <span class="spacer"></span>
-          <button class="btn" id="showHockeyBtn" type="button" aria-pressed="false">🏒 Hockey 11/8</button>
-          <button class="btn" id="showPokemonBtn" type="button" aria-pressed="false">Pokémon FL-PK</button>
+          <span id="showSwitcher" class="show-switcher"></span>
           <div class="sort-btns" role="group" aria-label="Look up by player or team" style="margin-left:6px;">
             <button type="button" id="modePlayerBtn" aria-pressed="true">👤 Player</button>
             <button type="button" id="modeTeamBtn" aria-pressed="false">👥 Team</button>
@@ -2030,6 +2030,28 @@
                                  // match. Deliberately NOT rows: they never touch worksheet totals,
                                  // per-user counts, missed lists, or the no-card-users callout.
 
+        /* ---------- app identity & baked-in sessions ---------- */
+        // APP_NAME is the app's display name — the one place it
+        // lives. Change this one string to rename the app; the
+        // browser tab title and every in-app mention of the name
+        // follow it. (The "player-user-lookup" marker inside
+        // session JSON files is a file-format marker, not branding
+        // — it stays, so session files exported before the rename
+        // still load.)
+        var APP_NAME = "Break Sorting Tool";
+        document.title = APP_NAME;
+        // Baked-in shows. Each entry is one worksheet's exported
+        // session JSON, in a <script type="application/json"> block
+        // below. Adding another sport or show is one entry here
+        // plus one JSON block — no other code changes: loading,
+        // search, Player/Team mode, camera and Bin/notes all work
+        // off the rows, never off which sport a sheet came from.
+        // The first entry loads by default on open.
+        var SESSIONS = [
+          { id: "hockey", label: "🏒 Hockey 11/8", btnId: "showHockeyBtn", blockId: "preloadedSessionHockey", file: "WTH-WN-HK-01_20261108_B-session.json" },
+          { id: "pokemon", label: "Pokémon FL-PK", btnId: "showPokemonBtn", blockId: "preloadedSession", file: "WTH-FL-PK-01_20261104_A-session.json" }
+        ];
+
         var $ = function (id) { return document.getElementById(id); };
         var uploadView = $("uploadView"), appView = $("appView"), dropzone = $("dropzone"),
             fileInput = $("fileInput"), parseError = $("parseError"),
@@ -2662,7 +2684,7 @@
         // break, every card already checked off still checked off
         // with its scan number, so counts continue, not restart.
         /* Session file format v1 — the PC → phone handoff contract.
-           The PC app (Player User Lookup PC) exports exactly this JSON
+           The PC app (Break Sorting Tool on PC) exports exactly this JSON
            after loading a worksheet; this phone app also saves it from
            “Save session”, and “Open session file” reads it back:
            {
@@ -2739,7 +2761,7 @@
               var rowsIn = data && (Array.isArray(data.rows) ? data.rows : (Array.isArray(data.workingBreaks) ? data.workingBreaks : null));
               var kindOk = data && (data.kind === "lookup-session" || data.kind === "sort-session" || data.format === "player-user-lookup-session");
               if (!data || !kindOk || !rowsIn || !rowsIn.length) {
-                showError("That isn't a session file. Pick the .json file exported from Player User Lookup PC, or the “sort-session” file the Save session button downloaded.");
+                showError("That isn't a session file. Pick the .json file exported from " + APP_NAME + " on your PC, or the “sort-session” file the Save session button downloaded.");
                 return;
               }
               if (typeof data.version === "number" && data.version > 1) {
@@ -5745,23 +5767,38 @@
         $("modeTeamBtn").addEventListener("click", function () { setLookupMode("team"); });
 
         /* ---------- preloaded sessions & show switcher ---------- */
-        // This build ships with two worksheets baked in: the JSON in
-        // the #preloadedSession block (Pokémon FL-PK) and the one in
-        // #preloadedSessionHockey (Hockey 11/8). Both load through
-        // the exact same loadSessionFile path the “Open session
-        // file” button uses, so the app behaves exactly as if that
-        // session file had been opened — filebar, session banner,
-        // counts and all. On open, the hockey show loads by default;
-        // the filebar switcher swaps between the two baked-in shows
-        // with one tap, and the active button shows as pressed.
-        // Loading any other file afterwards (picker, dropzone,
-        // “Load a different file”, “Open session file”) replaces the
-        // current show and clears the switcher, exactly like a
-        // session opened by hand.
+        // This build ships with worksheets baked in — see SESSIONS
+        // above. Each one loads through the exact same
+        // loadSessionFile path the “Open session file” button uses,
+        // so the app behaves exactly as if that session file had
+        // been opened — filebar, session banner, counts and all. On
+        // open, the first session in SESSIONS loads by default; the
+        // filebar switcher swaps between the baked-in shows with
+        // one tap, and the active button shows as pressed. Loading
+        // any other file afterwards (picker, dropzone, “Load a
+        // different file”, “Open session file”) replaces the current
+        // show and clears the switcher, exactly like a session
+        // opened by hand.
+        function renderShowSwitcher() {
+          var host = $("showSwitcher");
+          if (!host) return;
+          host.innerHTML = "";
+          SESSIONS.forEach(function (s) {
+            var b = document.createElement("button");
+            b.className = "btn";
+            b.id = s.btnId;
+            b.type = "button";
+            b.setAttribute("aria-pressed", "false");
+            b.textContent = s.label;
+            b.addEventListener("click", function () { showSession(s.id); });
+            host.appendChild(b);
+          });
+        }
         function setShowSwitcher(which) {
-          var hk = $("showHockeyBtn"), pk = $("showPokemonBtn");
-          if (hk) hk.setAttribute("aria-pressed", which === "hockey" ? "true" : "false");
-          if (pk) pk.setAttribute("aria-pressed", which === "pokemon" ? "true" : "false");
+          SESSIONS.forEach(function (s) {
+            var b = $(s.btnId);
+            if (b) b.setAttribute("aria-pressed", which === s.id ? "true" : "false");
+          });
         }
         function clearShowSwitcher() { setShowSwitcher(null); }
         function loadEmbeddedSession(blockId, fallbackName) {
@@ -5778,29 +5815,33 @@
           }
           return true;
         }
-        function showHockey() {
-          if (loadEmbeddedSession("preloadedSessionHockey", "WTH-WN-HK-01_20261108_B-session.json")) setShowSwitcher("hockey");
+        function showSession(id) {
+          var s = null;
+          SESSIONS.forEach(function (x) { if (x.id === id) s = x; });
+          if (!s) return;
+          if (loadEmbeddedSession(s.blockId, s.file)) setShowSwitcher(s.id);
         }
-        function showPokemon() {
-          if (loadEmbeddedSession("preloadedSession", "WTH-FL-PK-01_20261104_A-session.json")) setShowSwitcher("pokemon");
-        }
-        $("showHockeyBtn").addEventListener("click", showHockey);
-        $("showPokemonBtn").addEventListener("click", showPokemon);
+        function showHockey() { showSession("hockey"); }
+        function showPokemon() { showSession("pokemon"); }
 
-        // On open, load the hockey show by default — once, only
-        // when nothing has been loaded yet this visit.
+        // On open, load the first baked-in show by default — once,
+        // only when nothing has been loaded yet this visit.
         (function () {
+          renderShowSwitcher();
           if (rows.length) return;
-          showHockey();
+          showSession(SESSIONS[0].id);
         })();
 
         // Debug handle for headless checks (inert in the app): lets a
         // test page call the matchers against the loaded rows.
-        window.__puluTest = {
+        window.__bstTest = {
+          appName: APP_NAME,
+          sessions: SESSIONS,
           candidatesFromOCR: candidatesFromOCR,
           matchRows: matchRows,
           teamOf: teamOf,
           setLookupMode: setLookupMode,
+          showSession: showSession,
           get lookupMode() { return lookupMode; },
           rows: function () { return rows; }
         };
